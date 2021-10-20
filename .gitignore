@@ -1,2 +1,3 @@
 .idea/
-dataset
+cocodataset
+loss_0.log

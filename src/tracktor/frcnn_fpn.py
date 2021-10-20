@@ -1,8 +1,8 @@
-from model_utils.config import config
-from frcnn.faster_rcnn_resnet50v1 import Faster_Rcnn_Resnet
+from src.config import config
+from src.FasterRcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
 
 
-class FRCNN_FPN(Faster_Rcnn_Resnet):
+class FRCNN_FPN(Faster_Rcnn_Resnet50):
 
 	def __init__(self, num_classes):
 		super(FRCNN_FPN, self).__init__(config)
