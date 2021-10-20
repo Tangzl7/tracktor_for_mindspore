@@ -181,4 +181,10 @@ if __name__ == '__main__':
         cb += [ckpoint_cb]
 
     model = Model(net)
+
+    iterator = dataset.create_dict_iterator()
+    for item in iterator:
+        print(item)
+        break
+
     model.train(config.epoch_size, dataset, callbacks=cb)
