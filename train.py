@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
-"""train FasterRcnn and get checkpoint files."""
+"""train frcnn and get checkpoint files."""
 
 import os
 import time
@@ -31,15 +31,15 @@ from mindspore.train.serialization import load_checkpoint, load_param_into_net
 from mindspore.nn import SGD
 from mindspore.common import set_seed
 
-from src.FasterRcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
+from src.frcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
 from src.network_define import LossCallBack, WithLossCell, TrainOneStepCell, LossNet
-from src.config import config
+from src.frcnn.config import config
 from src.dataset import data_to_mindrecord_byte_image, create_fasterrcnn_dataset
 from src.lr_schedule import dynamic_lr
 
 set_seed(1)
 
-parser = argparse.ArgumentParser(description="FasterRcnn training")
+parser = argparse.ArgumentParser(description="frcnn training")
 parser.add_argument("--run_distribute", type=ast.literal_eval, default=False, help="Run distribute, default: false.")
 parser.add_argument("--dataset", type=str, default="coco", help="Dataset name, default: coco.")
 parser.add_argument("--pre_trained", type=str, default="", help="Pretrained file path.")
@@ -74,8 +74,8 @@ if __name__ == '__main__':
     print("Start create dataset!")
 
     # It will generate mindrecord file in args_opt.mindrecord_dir,
-    # and the file name is FasterRcnn.mindrecord0, 1, ... file_num.
-    prefix = "FasterRcnn.mindrecord"
+    # and the file name is frcnn.mindrecord0, 1, ... file_num.
+    prefix = "frcnn.mindrecord"
     mindrecord_dir = config.mindrecord_dir
     mindrecord_file = os.path.join(mindrecord_dir, prefix + "0")
     print("CHECKING MINDRECORD FILES ...")
@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     loss_scale = float(config.loss_scale)
 
-    # When create MindDataset, using the fitst mindrecord file, such as FasterRcnn.mindrecord0.
+    # When create MindDataset, using the fitst mindrecord file, such as frcnn.mindrecord0.
     dataset = create_fasterrcnn_dataset(mindrecord_file, batch_size=config.batch_size,
                                         device_num=device_num, rank_id=rank,
                                         num_parallel_workers=config.num_parallel_workers,

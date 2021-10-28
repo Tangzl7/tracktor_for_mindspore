@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
-"""FasterRcnn dataset"""
+"""frcnn dataset"""
 from __future__ import division
 
 import os
@@ -25,7 +25,7 @@ import mmcv
 import mindspore.dataset as de
 import mindspore.dataset.vision.c_transforms as C
 from mindspore.mindrecord import FileWriter
-from src.config import config
+from src.frcnn.config import config
 
 
 def bbox_overlaps(bboxes1, bboxes2, mode='iou'):
@@ -458,7 +458,7 @@ def data_to_mindrecord_byte_image(dataset="coco", is_training=True, prefix="fast
 
 def create_fasterrcnn_dataset(mindrecord_file, batch_size=2, device_num=1, rank_id=0, is_training=True,
                               num_parallel_workers=8, python_multiprocessing=False):
-    """Create FasterRcnn dataset with MindDataset."""
+    """Create frcnn dataset with MindDataset."""
     cv2.setNumThreads(0)
     de.config.set_prefetch_size(8)
     ds = de.MindDataset(mindrecord_file, columns_list=["image", "annotation"], num_shards=device_num, shard_id=rank_id,
@@ -478,7 +478,7 @@ def create_fasterrcnn_dataset(mindrecord_file, batch_size=2, device_num=1, rank_
         ds = ds.map(input_columns=["image", "annotation"],
                     output_columns=["image", "image_shape", "box", "label", "valid_num"],
                     column_order=["image", "image_shape", "box", "label", "valid_num"],
-                    operations=compose_map_func,
+                    operations=compose_map_func, python_multiprocessing=python_multiprocessing,
                     num_parallel_workers=num_parallel_workers)
         ds = ds.batch(batch_size, drop_remainder=True)
     return ds

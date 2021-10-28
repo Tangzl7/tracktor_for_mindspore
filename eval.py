@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
-"""Evaluation for FasterRcnn"""
+"""Evaluation for frcnn"""
 import os
 import argparse
 import time
@@ -21,17 +21,16 @@ import numpy as np
 from pycocotools.coco import COCO
 import mindspore.common.dtype as mstype
 from mindspore import context
-from mindspore.train.serialization import load_checkpoint, load_param_into_net
-from mindspore.common import set_seed, Parameter
+from mindspore.common import set_seed
 
-from src.FasterRcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
-from src.config import config
+from src.frcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
+from src.frcnn.config import config
 from src.dataset import data_to_mindrecord_byte_image, create_fasterrcnn_dataset
 from src.util import coco_eval, bbox2result_1image, results2json
 
 set_seed(1)
 
-parser = argparse.ArgumentParser(description="FasterRcnn evaluation")
+parser = argparse.ArgumentParser(description="frcnn evaluation")
 parser.add_argument("--dataset", type=str, default="coco", help="Dataset, default is coco.")
 parser.add_argument("--ann_file", type=str, default="./cocodataset/annotations/instances_val2017.json", help="Ann file, default is val.json.")
 parser.add_argument("--checkpoint_path", type=str, required=False, help="Checkpoint file path.")
@@ -43,7 +42,7 @@ args_opt = parser.parse_args()
 context.set_context(mode=context.GRAPH_MODE, device_target=args_opt.device_target, device_id=args_opt.device_id)
 
 def fasterrcnn_eval(dataset_path, ckpt_path, ann_file):
-    """FasterRcnn evaluation."""
+    """frcnn evaluation."""
     ds = create_fasterrcnn_dataset(dataset_path, batch_size=config.test_batch_size, is_training=False)
     net = Faster_Rcnn_Resnet50(config)
     # param_dict = load_checkpoint(ckpt_path)
@@ -78,7 +77,7 @@ def fasterrcnn_eval(dataset_path, ckpt_path, ann_file):
 
         start = time.time()
         # run net
-        output = net(img_data, img_metas, gt_bboxes, gt_labels, gt_num)
+        output = net(img_data, img_metas, 0, 0, 0)
         end = time.time()
         print("Iter {} cost time {}".format(eval_iter, end - start))
 

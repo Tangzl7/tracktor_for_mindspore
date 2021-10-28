@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""FasterRcnn training network wrapper."""
+"""frcnn training network wrapper."""
 
 import time
 import numpy as np
@@ -80,7 +80,7 @@ class LossCallBack(Callback):
 
 
 class LossNet(nn.Cell):
-    """FasterRcnn loss method"""
+    """frcnn loss method"""
     def construct(self, x1, x2, x3, x4, x5, x6):
         return x1 + x2
 

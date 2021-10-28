@@ -2,3 +2,5 @@
 cocodataset
 loss_0.log
 results.pkl.bbox.json
+*.dat
+MindRecord_COCO_TRAIN
