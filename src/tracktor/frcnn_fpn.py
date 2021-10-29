@@ -1,3 +1,4 @@
+import mindspore
 import numpy as np
 
 import mindspore as ms
@@ -6,7 +7,7 @@ import mindspore.common.dtype as mstype
 from mindspore.ops import functional as F
 import mindspore.ops as ops
 
-# from src.frcnn.config import config
+from src.frcnn.config import config
 from src.frcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
 
 
@@ -14,20 +15,28 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 
 	def __init__(self, config):
 		super(FRCNN_FPN, self).__init__(config)
+		self.config = config
 		self.original_image_sizes = None
 		self.preprocessed_images = None
 		self.features = None
 		self.ones = ops.Ones()
+		self.zeros = ops.Zeros()
+		self.concat_3 = ops.Concat()
 
 	def detect(self, img_data, img_metas):
 		return self(img_data, img_metas)
 
 	def predict_boxes(self, boxes):
-		# proposal: tuple: batch, 1000*5
-		# proposal_mask: tuple: batch, 1000*5
-		proposal, proposal_mask = boxes, ()
-		for i in proposal:
-			proposal_mask = proposal_mask + (self.ones((1000, ), mstype.bool_))
+		# proposal: tuple: batch, 1000, 5
+		# proposal_mask: tuple: batch, 1000, 5
+		proposal, proposal_mask = (), ()
+		for i in range(len(boxes)):
+			boxes_false = self.zeros((self.config.rpn_max_num - len(boxes[i]), 5), mindspore.float32)
+			proposal = proposal + (self.concat_3((boxes[i], boxes_false)), )
+			masks_true = self.ones((len(boxes[i])), mstype.bool_)
+			masks_false = self.zeros((self.config.rpn_max_num - len(boxes[i])), mstype.bool_)
+			proposal_mask = proposal_mask + (self.concat_3((masks_true, masks_false)), )
+
 		bboxes_tuple = ()
 		mask_tuple = ()
 		# mask_tuple: tuple: batch, (1000, )
@@ -68,7 +77,17 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 
 		output = self.get_det_bboxes(rcnn_cls_loss, rcnn_reg_loss, rcnn_masks, bboxes_all, self.img_metas)
 
-		return output
+		pred_boxes, pred_cls, pred_mask = output[0].asnumpy(), output[1].asnumpy(), output[2].asnumpy()
+		result_boxes, result_cls = [], []
+
+		for j in range(self.config.test_batch_size):
+			pred_boxes_j = np.squeeze(pred_boxes[j, :, :])
+			pred_cls_j = np.squeeze(pred_cls[j, :, :])
+			pred_mask_j = np.squeeze(pred_mask[j, :, :])
+			result_boxes.append(pred_boxes_j[pred_mask_j, :])
+			result_cls.append(pred_cls_j[pred_mask_j])
+
+		return np.array(result_boxes), np.array(result_cls)
 
 	def load_image(self, img_data, img_metas):
 		self.set_train(False)
@@ -77,10 +96,19 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 		self.features = self.backbone(img_data)
 		self.features = self.fpn_ncek(self.features)
 
-# if __name__ == '__main__':
-# 	frcnn = Faster_Rcnn_Resnet50(config)
-# 	img = Tensor(np.random.random((1, 3, 768, 1280)), dtype=ms.dtype.float32)
-# 	img_meta = Tensor(np.array([[480, 640, 1.6, 1.6]]), dtype=ms.dtype.float32)
-# 	frcnn.set_train(False)
-# 	output = frcnn(img, img_meta, 0, 0, 0)
-# 	print(output)
+if __name__ == '__main__':
+	# frcnn = FRCNN_FPN(config)
+	# img = Tensor(np.random.random((1, 3, 768, 1280)), dtype=ms.dtype.float32)
+	# img_meta = Tensor(np.array([[480, 640, 1.6, 1.6]]), dtype=ms.dtype.float32)
+	# frcnn.set_train(False)
+	# output = frcnn(img, img_meta, 0, 0, 0)
+	# print(output)
+	frcnn = FRCNN_FPN(config)
+	img = Tensor(np.random.random((1, 3, 768, 1280)), dtype=ms.dtype.float32)
+	img_meta = Tensor(np.array([[480, 640, 1.6, 1.6]]), dtype=ms.dtype.float32)
+	frcnn.load_image(img, img_meta)
+	box = Tensor(np.random.random((50, 5)), dtype=ms.dtype.float32)
+	box = (box, )
+	frcnn.predict_boxes(box)
+	print('ff')
+

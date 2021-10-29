@@ -106,7 +106,7 @@ config = ed({
     "test_score_thr": 0.05,
     "test_iou_thr": 0.5,
     "test_max_per_img": 100,
-    "test_batch_size": 2,
+    "test_batch_size": 1,
 
     "rpn_head_use_sigmoid": True,
     "rpn_head_weight": 1.0,

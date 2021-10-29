@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 from collections import deque
 
@@ -62,7 +63,8 @@ class Tracker():
         pos = self.get_pos()  # get the track's pos
         out = self.obj_detect(pos)
         boxes = out[0]
-        pos = clip_boxes_to_image(boxes, blob['im_info'][0][:2])
+        # pos = clip_boxes_to_image(boxes, blob['im_info'][0][:2])
+        pos = None
         scores = boxes[:, -1]
 
         s = []
@@ -124,6 +126,10 @@ class Tracker():
             person_scores = self.regress_tracks(blob)
 
             if len(self.tracks):
+                pass
+
+    def get_result(self):
+        pass
 
 
 

@@ -1,8 +1,13 @@
 import os
+import time
+
+import cv2
 import yaml
 import os.path as osp
 from sacred import Experiment
 
+from src.tracktor import data_handle
+from src.tracktor.tracker import Tracker
 from src.tracktor.config import get_output_dir
 
 from mindspore import load_checkpoint, load_param_into_net
@@ -41,3 +46,34 @@ def main(tracktor, _config):
         """
     else:
         raise NotImplementedError(f"Object detector type not known: {tracktor['network']}")
+
+    # tracktor
+    tracker = Tracker(obj_detect, tracker_cfg=tracktor['tracker'])
+    tracker.reset()
+
+    print("[*] Beginning evaluation...")
+    cap = cv2.VideoCapture(webcan)
+    num_images = 0
+    images = []
+    try:
+        begin = time.time()
+        while cap.isOpened():
+            ret, frame = cap.read()
+            images.append(frame)
+            try:
+                blob = data_handle.data_process(frame)
+            except:
+                print("over")
+                break
+            tracker.step(blob)
+            num_images += 1
+            if num_images % 10 == 0:
+                print('now is :', num_images)
+        results = tracker.get_result()
+        end = time.time()
+        print("[*] Tracks found: {}".format(len(results)))
+        print('It takes: {:.3f} s'.format((end - begin)))
+        cap.release()
+
+    except:
+        raise KeyboardInterrupt

@@ -19,6 +19,14 @@ __C.ROOT_DIR = osp.abspath(osp.join(osp.dirname(__file__), '..', '..'))
 # Data directory
 __C.DATA_DIR = osp.abspath(osp.join(__C.ROOT_DIR, 'data'))
 
+__C.PIXEL_MEANS = np.array([[[102.9801, 115.9465, 122.7717]]])
+
+__C.TEST = edict()
+
+__C.TEST.SCALES = (600,)
+
+__C.TEST.MAX_SIZE = 1000
+
 def get_output_dir(module):
   """Return the directory where experimental artifacts are placed.
   If the directory does not exist, it is created.
