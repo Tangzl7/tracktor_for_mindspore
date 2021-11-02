@@ -18,10 +18,13 @@ normalize_std = [0.229, 0.224, 0.225]
 def data_process(frame):
   im = np.array(frame)
 
-  data, im_scales = _get_image_blob(frame)
-  c = np.array([data.shape[1], data.shape[2], im_scales[0]], dtype=np.float32)
+  data_, im_scales = _get_image_blob(frame)
+  data = []
+  for i in range(len(data_)):
+    data.append(c_vision.HWC2CHW()(data_[i]))
+  c = np.array([im.shape[0], im.shape[1], im_scales[0], im_scales[0]], dtype=np.float32)
   c = Tensor(c, dtype=ms.dtype.float32)
-  data = Tensor(data, dtype=ms.dtype.float32)
+  data = Tensor(np.array(data), dtype=ms.dtype.float32)
 
   sample = {}
   sample['data'] = data
@@ -57,7 +60,7 @@ def _get_image_blob(im):
     # Prevent the biggest axis from being more than MAX_SIZE
     if np.round(im_scale * im_size_max) > cfg.TEST.MAX_SIZE:
       im_scale = float(cfg.TEST.MAX_SIZE) / float(im_size_max)
-    im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale,
+    im = cv2.resize(im_orig, (1280, 768), fx=im_scale, fy=im_scale,
             interpolation=cv2.INTER_LINEAR)
     im_scale_factors.append(im_scale)
     processed_ims.append(im)

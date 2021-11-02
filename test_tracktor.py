@@ -55,25 +55,34 @@ def main(tracktor, _config):
     cap = cv2.VideoCapture(webcan)
     num_images = 0
     images = []
-    try:
-        begin = time.time()
-        while cap.isOpened():
-            ret, frame = cap.read()
-            images.append(frame)
-            try:
-                blob = data_handle.data_process(frame)
-            except:
-                print("over")
-                break
-            tracker.step(blob)
-            num_images += 1
-            if num_images % 10 == 0:
-                print('now is :', num_images)
-        results = tracker.get_result()
-        end = time.time()
-        print("[*] Tracks found: {}".format(len(results)))
-        print('It takes: {:.3f} s'.format((end - begin)))
-        cap.release()
-
-    except:
-        raise KeyboardInterrupt
+    while cap.isOpened():
+        ret, frame = cap.read()
+        images.append(frame)
+        blob = data_handle.data_process(frame)
+        # except:
+        #     print("over")
+        #     break
+        tracker.step(blob)
+        print("step")
+    # try:
+    #     begin = time.time()
+    #     while cap.isOpened():
+    #         ret, frame = cap.read()
+    #         images.append(frame)
+    #         try:
+    #             blob = data_handle.data_process(frame)
+    #         except:
+    #             print("over")
+    #             break
+    #         tracker.step(blob)
+    #         num_images += 1
+    #         if num_images % 10 == 0:
+    #             print('now is :', num_images)
+    #     results = tracker.get_result()
+    #     end = time.time()
+    #     print("[*] Tracks found: {}".format(len(results)))
+    #     print('It takes: {:.3f} s'.format((end - begin)))
+    #     cap.release()
+    #
+    # except:
+    #     raise KeyboardInterrupt

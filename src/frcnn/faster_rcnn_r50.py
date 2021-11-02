@@ -312,7 +312,7 @@ class Faster_Rcnn_Resnet50(nn.Cell):
 
         return output
 
-    def get_det_bboxes(self, cls_logits, reg_logits, mask_logits, rois, img_metas):
+    def get_det_bboxes(self, cls_logits, reg_logits, mask_logits, rois, img_metas, pred_boxes=False):
         """Get the actual detection box."""
         scores = self.softmax(cls_logits)
 
@@ -343,7 +343,10 @@ class Faster_Rcnn_Resnet50(nn.Cell):
         # boxes_all_with_batchsize: tuple batch, tuple 81, (1000, 4)
         # scores_all: tuple batch, (1000, 81)
         # mask_all: tuple batch, (1000, )
-        output = self.multiclass_nms(boxes_all_with_batchsize, scores_all, mask_all)
+        if pred_boxes == False:
+            output = self.multiclass_nms(boxes_all_with_batchsize, scores_all, mask_all)
+        else:
+            output = boxes_all_with_batchsize[0], scores_all[0], mask_all[0]
 
         return output
 

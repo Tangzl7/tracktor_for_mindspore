@@ -23,9 +23,9 @@ __C.PIXEL_MEANS = np.array([[[102.9801, 115.9465, 122.7717]]])
 
 __C.TEST = edict()
 
-__C.TEST.SCALES = (600,)
+__C.TEST.SCALES = (768,)
 
-__C.TEST.MAX_SIZE = 1000
+__C.TEST.MAX_SIZE = 1280
 
 def get_output_dir(module):
   """Return the directory where experimental artifacts are placed.

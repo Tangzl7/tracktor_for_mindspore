@@ -24,7 +24,20 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 		self.concat_3 = ops.Concat()
 
 	def detect(self, img_data, img_metas):
-		return self(img_data, img_metas)
+		self.set_train(False)
+		output = self(img_data, img_metas)
+
+		pred_boxes, pred_cls, pred_mask = output[0].asnumpy(), output[1].asnumpy(), output[2].asnumpy()
+		result_boxes, result_cls = [], []
+
+		for j in range(self.config.test_batch_size):
+			pred_boxes_j = np.squeeze(pred_boxes[j, :, :])
+			pred_cls_j = np.squeeze(pred_cls[j, :, :])
+			pred_mask_j = np.squeeze(pred_mask[j, :, :])
+			result_boxes.append(pred_boxes_j[pred_mask_j, :])
+			result_cls.append(pred_cls_j[pred_mask_j])
+
+		return np.array(result_boxes), np.array(result_cls)
 
 	def predict_boxes(self, boxes):
 		# proposal: tuple: batch, 1000, 5
@@ -75,19 +88,20 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 															   rcnn_labels,
 															   rcnn_mask_squeeze)
 
-		output = self.get_det_bboxes(rcnn_cls_loss, rcnn_reg_loss, rcnn_masks, bboxes_all, self.img_metas)
+		output = self.get_det_bboxes(rcnn_cls_loss, rcnn_reg_loss, rcnn_masks, bboxes_all, self.img_metas, True)
 
-		pred_boxes, pred_cls, pred_mask = output[0].asnumpy(), output[1].asnumpy(), output[2].asnumpy()
-		result_boxes, result_cls = [], []
+		pred_boxes, pred_cls, pred_mask = output[0][1].asnumpy(), output[1].asnumpy(), output[2].asnumpy().astype(bool)
+		pred_boxes, pred_cls = pred_boxes[pred_mask, :], pred_cls[pred_mask, 1]
+		# result_boxes, result_cls = [], []
+		#
+		# for j in range(self.config.test_batch_size):
+		# 	pred_boxes_j = np.squeeze(pred_boxes[j, :, :])
+		# 	pred_cls_j = np.squeeze(pred_cls[j, :, :])
+		# 	pred_mask_j = np.squeeze(pred_mask[j, :, :])
+		# 	result_boxes.append(pred_boxes_j[pred_mask_j, :])
+		# 	result_cls.append(pred_cls_j[pred_mask_j])
 
-		for j in range(self.config.test_batch_size):
-			pred_boxes_j = np.squeeze(pred_boxes[j, :, :])
-			pred_cls_j = np.squeeze(pred_cls[j, :, :])
-			pred_mask_j = np.squeeze(pred_mask[j, :, :])
-			result_boxes.append(pred_boxes_j[pred_mask_j, :])
-			result_cls.append(pred_cls_j[pred_mask_j])
-
-		return np.array(result_boxes), np.array(result_cls)
+		return pred_boxes, pred_cls
 
 	def load_image(self, img_data, img_metas):
 		self.set_train(False)
@@ -110,5 +124,4 @@ if __name__ == '__main__':
 	box = Tensor(np.random.random((50, 5)), dtype=ms.dtype.float32)
 	box = (box, )
 	frcnn.predict_boxes(box)
-	print('ff')
 
