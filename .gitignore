@@ -1,5 +1,5 @@
 .idea/
-data/
+data/*
 __pycache__/
 cocodataset
 loss_0.log
