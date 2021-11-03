@@ -32,10 +32,10 @@ from mindspore.nn import SGD
 from mindspore.common import set_seed
 
 from src.frcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
-from src.network_define import LossCallBack, WithLossCell, TrainOneStepCell, LossNet
+from src.frcnn.network_define import LossCallBack, WithLossCell, TrainOneStepCell, LossNet
 from src.frcnn.config import config
 from src.dataset import data_to_mindrecord_byte_image, create_fasterrcnn_dataset
-from src.lr_schedule import dynamic_lr
+from src.frcnn.lr_schedule import dynamic_lr
 
 set_seed(1)
 
@@ -43,7 +43,7 @@ parser = argparse.ArgumentParser(description="frcnn training")
 parser.add_argument("--run_distribute", type=ast.literal_eval, default=False, help="Run distribute, default: false.")
 parser.add_argument("--dataset", type=str, default="coco", help="Dataset name, default: coco.")
 parser.add_argument("--pre_trained", type=str, default="", help="Pretrained file path.")
-parser.add_argument("--device_target", type=str, default="GPU",
+parser.add_argument("--device_target", type=str, default="CPU",
                     help="device where the code will be implemented, default is Ascend")
 parser.add_argument("--device_id", type=int, default=0, help="Device id, default: 0.")
 parser.add_argument("--device_num", type=int, default=1, help="Use device nums, default: 1.")
@@ -185,6 +185,5 @@ if __name__ == '__main__':
     iterator = dataset.create_dict_iterator()
     for item in iterator:
         print(item)
-        break
 
     model.train(config.epoch_size, dataset, callbacks=cb)

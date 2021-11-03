@@ -112,7 +112,7 @@ config = ed({
     "rpn_head_weight": 1.0,
 
     # LR
-    "base_lr": 0.04,
+    "base_lr": 0.01,
     "warmup_step": 500,
     "warmup_ratio": 1/16.0,
     "sgd_step": [8, 11],
@@ -122,7 +122,7 @@ config = ed({
     "batch_size": 1,
     "loss_scale": 256,
     "momentum": 0.91,
-    "weight_decay": 1e-5,
+    "weight_decay": 0.0005,
     "epoch_size": 12,
     "save_checkpoint": False,
     "save_checkpoint_epochs": 1,
@@ -134,7 +134,7 @@ config = ed({
     # Parallelize Python operations with multiple worker processes
     "python_multiprocessing": False,
     "mindrecord_dir": "./MindRecord_COCO_TRAIN",
-    "coco_root": "./cocodataset/",
+    "coco_root": "./data/tiny_coco-master",
     "train_data_type": "train2017",
     "val_data_type": "val2017",
     "instance_set": "annotations/instances_{}.json",
@@ -153,5 +153,5 @@ config = ed({
                      'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
                      'refrigerator', 'book', 'clock', 'vase', 'scissors',
                      'teddy bear', 'hair drier', 'toothbrush'),
-    "num_classes": 81
+    "num_classes": 2
 })

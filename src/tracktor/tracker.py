@@ -126,9 +126,6 @@ class Tracker():
         #      [0.032, 0.324, 0.232, 0.435, 0.2]])
         inds = ops.Greater()(Tensor(boxes[:, -1]), self.detection_person_thresh).asnumpy()
 
-        det_pos = boxes[inds, :-1]
-        det_score = boxes[inds, -1]
-
         ##################
         # Predict tracks #
         ##################
