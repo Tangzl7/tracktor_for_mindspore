@@ -77,7 +77,7 @@ def fasterrcnn_eval(dataset_path, ckpt_path, ann_file):
 
         start = time.time()
         # run net
-        output = net(img_data, img_metas, 0, 0, 0)
+        output = net(img_data, img_metas, gt_bboxes, gt_labels, gt_num)
         end = time.time()
         print("Iter {} cost time {}".format(eval_iter, end - start))
 

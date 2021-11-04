@@ -33,7 +33,7 @@ parser.add_argument('--test_vis_threshold', type=float, default=0.25)
 parser.add_argument('--pretraining', default='')
 parser.add_argument('--arch', type=str, default='fasterrcnn_resnet50_fpn')
 
-parser.add_argument("--device_target", type=str, default="CPU",
+parser.add_argument("--device_target", type=str, default="GPU",
                     help="device where the code will be implemented, default is Ascend")
 parser.add_argument("--device_id", type=int, default=0, help="Device id, default: 0.")
 parser.add_argument("--device_num", type=int, default=1, help="Use device nums, default: 1.")

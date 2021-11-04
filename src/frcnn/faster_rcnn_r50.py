@@ -204,7 +204,7 @@ class Faster_Rcnn_Resnet50(nn.Cell):
         self.roi_align_index_tensor = Tensor(np.concatenate(roi_align_index))
         self.roi_align_index_test_tensor = Tensor(np.concatenate(roi_align_index_test))
 
-    def construct(self, img_data, img_metas, gt_bboxes=0, gt_labels=0, gt_valids=0):
+    def construct(self, img_data, img_metas, gt_bboxes=1, gt_labels=1, gt_valids=1):
         x = self.backbone(img_data)
         x = self.fpn_ncek(x)
 
@@ -224,6 +224,7 @@ class Faster_Rcnn_Resnet50(nn.Cell):
             proposal, proposal_mask = self.proposal_generator(cls_score, bbox_pred, self.anchor_list)
         else:
             proposal, proposal_mask = self.proposal_generator_test(cls_score, bbox_pred, self.anchor_list)
+
         gt_labels = self.cast(gt_labels, mstype.int32)
         gt_valids = self.cast(gt_valids, mstype.int32)
         bboxes_tuple = ()
@@ -263,6 +264,7 @@ class Faster_Rcnn_Resnet50(nn.Cell):
             # bboxes_tuple: tuple: batch, (1000, 4)
             for p_i in proposal:
                 bboxes_tuple += (p_i[::, 0:4:1],)
+
         if self.training:
             if self.train_batch_size > 1:
                 bboxes_all = self.concat(bboxes_tuple)
@@ -303,14 +305,14 @@ class Faster_Rcnn_Resnet50(nn.Cell):
                                                                bbox_targets,
                                                                rcnn_labels,
                                                                rcnn_mask_squeeze)
-
-        output = ()
-        if self.training:
-            output += (rpn_loss, rcnn_loss, rpn_cls_loss, rpn_reg_loss, rcnn_cls_loss, rcnn_reg_loss)
-        else:
-            output = self.get_det_bboxes(rcnn_cls_loss, rcnn_reg_loss, rcnn_masks, bboxes_all, img_metas)
-
-        return output
+        return rcnn_loss, rcnn_cls_loss, rcnn_reg_loss
+        # output = ()
+        # if self.training:
+        #     output += (rpn_loss, rcnn_loss, rpn_cls_loss, rpn_reg_loss, rcnn_cls_loss, rcnn_reg_loss)
+        # else:
+        #     output = self.get_det_bboxes(rcnn_cls_loss, rcnn_reg_loss, rcnn_masks, bboxes_all, img_metas, False)
+        #
+        # return output
 
     def get_det_bboxes(self, cls_logits, reg_logits, mask_logits, rois, img_metas, pred_boxes=False):
         """Get the actual detection box."""
