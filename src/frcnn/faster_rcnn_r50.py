@@ -305,14 +305,14 @@ class Faster_Rcnn_Resnet50(nn.Cell):
                                                                bbox_targets,
                                                                rcnn_labels,
                                                                rcnn_mask_squeeze)
-        return rcnn_loss, rcnn_cls_loss, rcnn_reg_loss
-        # output = ()
-        # if self.training:
-        #     output += (rpn_loss, rcnn_loss, rpn_cls_loss, rpn_reg_loss, rcnn_cls_loss, rcnn_reg_loss)
-        # else:
-        #     output = self.get_det_bboxes(rcnn_cls_loss, rcnn_reg_loss, rcnn_masks, bboxes_all, img_metas, False)
-        #
-        # return output
+
+        output = ()
+        if self.training:
+            output += (rpn_loss, rcnn_loss, rpn_cls_loss, rpn_reg_loss, rcnn_cls_loss, rcnn_reg_loss)
+        else:
+            output = self.get_det_bboxes(rcnn_cls_loss, rcnn_reg_loss, rcnn_masks, bboxes_all, img_metas, False)
+
+        return output
 
     def get_det_bboxes(self, cls_logits, reg_logits, mask_logits, rois, img_metas, pred_boxes=False):
         """Get the actual detection box."""

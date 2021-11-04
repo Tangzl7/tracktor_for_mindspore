@@ -16,9 +16,11 @@
 
 import numpy as np
 import mindspore.nn as nn
+import mindspore.common.dtype as mstype
 from mindspore.ops import operations as P
 from mindspore.common.tensor import Tensor
 from mindspore.ops import functional as F
+from mindspore.common.initializer import initializer
 
 
 def weight_init_ones(shape):
@@ -29,10 +31,11 @@ def weight_init_ones(shape):
 def _conv(in_channels, out_channels, kernel_size=3, stride=1, padding=0, pad_mode='pad'):
     """Conv2D wrapper."""
     shape = (out_channels, in_channels, kernel_size, kernel_size)
-    weights = weight_init_ones(shape)
+    # weights = weight_init_ones(shape)
+    weight_conv = initializer('Normal', shape=shape, dtype=mstype.float32).to_tensor()
     return nn.Conv2d(in_channels, out_channels,
                      kernel_size=kernel_size, stride=stride, padding=padding,
-                     pad_mode=pad_mode, weight_init=weights, has_bias=False)
+                     pad_mode=pad_mode, weight_init=weight_conv, has_bias=False)
 
 
 def _BatchNorm2dInit(out_chls, momentum=0.1, affine=True, use_batch_statistics=True):

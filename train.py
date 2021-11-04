@@ -121,70 +121,68 @@ if __name__ == '__main__':
     print("Create dataset done!")
 
     net = Faster_Rcnn_Resnet50(config=config)
-    # net = net.set_train()
-    #
-    # load_path = args_opt.pre_trained
-    # if load_path != "":
-    #     param_dict = load_checkpoint(load_path)
-    #
-    #     key_mapping = {'down_sample_layer.1.beta': 'bn_down_sample.beta',
-    #                    'down_sample_layer.1.gamma': 'bn_down_sample.gamma',
-    #                    'down_sample_layer.0.weight': 'conv_down_sample.weight',
-    #                    'down_sample_layer.1.moving_mean': 'bn_down_sample.moving_mean',
-    #                    'down_sample_layer.1.moving_variance': 'bn_down_sample.moving_variance',
-    #                    }
-    #     for oldkey in list(param_dict.keys()):
-    #         if not oldkey.startswith(('backbone', 'end_point', 'global_step', 'learning_rate', 'moments', 'momentum')):
-    #             data = param_dict.pop(oldkey)
-    #             newkey = 'backbone.' + oldkey
-    #             param_dict[newkey] = data
-    #             oldkey = newkey
-    #         for k, v in key_mapping.items():
-    #             if k in oldkey:
-    #                 newkey = oldkey.replace(k, v)
-    #                 param_dict[newkey] = param_dict.pop(oldkey)
-    #                 break
-    #
-    #     for item in list(param_dict.keys()):
-    #         if not item.startswith('backbone'):
-    #             param_dict.pop(item)
-    #
-    #     for key, value in param_dict.items():
-    #         tensor = value.asnumpy().astype(np.float32)
-    #         param_dict[key] = Parameter(tensor, key)
-    #     load_param_into_net(net, param_dict)
-    #
-    # device_type = "Ascend" if context.get_context("device_target") == "Ascend" else "Others"
-    # if device_type == "Ascend":
-    #     net.to_float(mstype.float16)
-    #
-    # loss = LossNet()
-    # lr = Tensor(dynamic_lr(config, dataset_size), mstype.float32)
-    #
-    # opt = SGD(params=net.trainable_params(), learning_rate=lr, momentum=config.momentum,
-    #           weight_decay=config.weight_decay, loss_scale=config.loss_scale)
-    # net_with_loss = WithLossCell(net, loss)
-    # if args_opt.run_distribute:
-    #     net = TrainOneStepCell(net_with_loss, opt, sens=config.loss_scale, reduce_flag=True,
-    #                            mean=True, degree=device_num)
-    # else:
-    #     net = TrainOneStepCell(net_with_loss, opt, sens=config.loss_scale)
-    #
-    # time_cb = TimeMonitor(data_size=dataset_size)
-    # loss_cb = LossCallBack(rank_id=rank)
-    # cb = [time_cb, loss_cb]
-    # if config.save_checkpoint:
-    #     ckptconfig = CheckpointConfig(save_checkpoint_steps=config.save_checkpoint_epochs * dataset_size,
-    #                                   keep_checkpoint_max=config.keep_checkpoint_max)
-    #     save_checkpoint_path = os.path.join(config.save_checkpoint_path, "ckpt_" + str(rank) + "/")
-    #     ckpoint_cb = ModelCheckpoint(prefix='faster_rcnn', directory=save_checkpoint_path, config=ckptconfig)
-    #     cb += [ckpoint_cb]
-    #
-    # model = Model(net)
+    net = net.set_train()
 
-    iterator = dataset.create_dict_iterator()
-    for item in iterator:
-        # print(item)
-        out = net(item[0], item[1], item[2], item[3], item[4])
-        print(out)
-    # model.train(config.epoch_size, dataset, callbacks=cb)
+    load_path = args_opt.pre_trained
+    if load_path != "":
+        param_dict = load_checkpoint(load_path)
+
+        key_mapping = {'down_sample_layer.1.beta': 'bn_down_sample.beta',
+                       'down_sample_layer.1.gamma': 'bn_down_sample.gamma',
+                       'down_sample_layer.0.weight': 'conv_down_sample.weight',
+                       'down_sample_layer.1.moving_mean': 'bn_down_sample.moving_mean',
+                       'down_sample_layer.1.moving_variance': 'bn_down_sample.moving_variance',
+                       }
+        for oldkey in list(param_dict.keys()):
+            if not oldkey.startswith(('backbone', 'end_point', 'global_step', 'learning_rate', 'moments', 'momentum')):
+                data = param_dict.pop(oldkey)
+                newkey = 'backbone.' + oldkey
+                param_dict[newkey] = data
+                oldkey = newkey
+            for k, v in key_mapping.items():
+                if k in oldkey:
+                    newkey = oldkey.replace(k, v)
+                    param_dict[newkey] = param_dict.pop(oldkey)
+                    break
+
+        for item in list(param_dict.keys()):
+            if not item.startswith('backbone'):
+                param_dict.pop(item)
+
+        for key, value in param_dict.items():
+            tensor = value.asnumpy().astype(np.float32)
+            param_dict[key] = Parameter(tensor, key)
+        load_param_into_net(net, param_dict)
+
+    device_type = "Ascend" if context.get_context("device_target") == "Ascend" else "Others"
+    if device_type == "Ascend":
+        net.to_float(mstype.float16)
+
+    loss = LossNet()
+    lr = Tensor(dynamic_lr(config, dataset_size), mstype.float32)
+
+    opt = SGD(params=net.trainable_params(), learning_rate=lr, momentum=config.momentum,
+              weight_decay=config.weight_decay, loss_scale=config.loss_scale)
+    net_with_loss = WithLossCell(net, loss)
+    if args_opt.run_distribute:
+        net = TrainOneStepCell(net_with_loss, opt, sens=config.loss_scale, reduce_flag=True,
+                               mean=True, degree=device_num)
+    else:
+        net = TrainOneStepCell(net_with_loss, opt, sens=config.loss_scale)
+
+    time_cb = TimeMonitor(data_size=dataset_size)
+    loss_cb = LossCallBack(rank_id=rank)
+    cb = [time_cb, loss_cb]
+    if config.save_checkpoint:
+        ckptconfig = CheckpointConfig(save_checkpoint_steps=config.save_checkpoint_epochs * dataset_size,
+                                      keep_checkpoint_max=config.keep_checkpoint_max)
+        save_checkpoint_path = os.path.join(config.save_checkpoint_path, "ckpt_" + str(rank) + "/")
+        ckpoint_cb = ModelCheckpoint(prefix='faster_rcnn', directory=save_checkpoint_path, config=ckptconfig)
+        cb += [ckpoint_cb]
+
+    model = Model(net)
+
+    # iterator = dataset.create_dict_iterator()
+    # for item in iterator:
+    #     print(item)
+    model.train(config.epoch_size, dataset, callbacks=cb)

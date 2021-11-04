@@ -132,7 +132,7 @@ config = ed({
     # Number of threads used to process the dataset in parallel
     "num_parallel_workers": 8,
     # Parallelize Python operations with multiple worker processes
-    "python_multiprocessing": True,
+    "python_multiprocessing": False,
     "mindrecord_dir": "./MindRecord_COCO_TRAIN",
     "coco_root": "./data/tiny_coco-master",
     "train_data_type": "train2017",
