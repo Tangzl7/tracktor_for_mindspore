@@ -98,9 +98,9 @@ config = ed({
 
     # test proposal
     "rpn_nms_across_levels": False,
-    "rpn_nms_pre": 1000,
-    "rpn_nms_post": 1000,
-    "rpn_max_num": 1000,
+    "rpn_nms_pre": 200,
+    "rpn_nms_post": 200,
+    "rpn_max_num": 200,
     "rpn_nms_thr": 0.7,
     "rpn_min_bbox_min_size": 0,
     "test_score_thr": 0.05,
@@ -112,7 +112,7 @@ config = ed({
     "rpn_head_weight": 1.0,
 
     # LR
-    "base_lr": 0.01,
+    "base_lr": 0.001,
     "warmup_step": 500,
     "warmup_ratio": 1/16.0,
     "sgd_step": [8, 11],
@@ -121,13 +121,13 @@ config = ed({
     # train
     "batch_size": 1,
     "loss_scale": 256,
-    "momentum": 0.91,
+    "momentum": 0.9,
     "weight_decay": 0.0005,
-    "epoch_size": 12,
-    "save_checkpoint": False,
+    "epoch_size": 30,
+    "save_checkpoint": True,
     "save_checkpoint_epochs": 1,
-    "keep_checkpoint_max": 10,
-    "save_checkpoint_path": "./",
+    "keep_checkpoint_max": 5,
+    "save_checkpoint_path": "./ckpt",
 
     # Number of threads used to process the dataset in parallel
     "num_parallel_workers": 8,
@@ -153,5 +153,5 @@ config = ed({
                      'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
                      'refrigerator', 'book', 'clock', 'vase', 'scissors',
                      'teddy bear', 'hair drier', 'toothbrush'),
-    "num_classes": 2
+    "num_classes": 81
 })

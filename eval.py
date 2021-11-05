@@ -21,7 +21,8 @@ import numpy as np
 from pycocotools.coco import COCO
 import mindspore.common.dtype as mstype
 from mindspore import context
-from mindspore.common import set_seed
+from mindspore.common import set_seed, Parameter
+from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
 from src.frcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
 from src.frcnn.config import config
@@ -33,7 +34,7 @@ set_seed(1)
 parser = argparse.ArgumentParser(description="frcnn evaluation")
 parser.add_argument("--dataset", type=str, default="coco", help="Dataset, default is coco.")
 parser.add_argument("--ann_file", type=str, default="./cocodataset/annotations/instances_val2017.json", help="Ann file, default is val.json.")
-parser.add_argument("--checkpoint_path", type=str, required=False, help="Checkpoint file path.")
+parser.add_argument("--checkpoint_path", type=str, default="./ckpt/ckpt_0/faster_rcnn-12_7393.ckpt", help="Checkpoint file path.")
 parser.add_argument("--device_target", type=str, default="GPU",
                     help="device where the code will be implemented, default is Ascend")
 parser.add_argument("--device_id", type=int, default=0, help="Device id, default is 0.")
@@ -41,16 +42,17 @@ args_opt = parser.parse_args()
 
 context.set_context(mode=context.GRAPH_MODE, device_target=args_opt.device_target, device_id=args_opt.device_id)
 
+
 def fasterrcnn_eval(dataset_path, ckpt_path, ann_file):
     """frcnn evaluation."""
     ds = create_fasterrcnn_dataset(dataset_path, batch_size=config.test_batch_size, is_training=False)
     net = Faster_Rcnn_Resnet50(config)
-    # param_dict = load_checkpoint(ckpt_path)
-    # if args_opt.device_target == "GPU":
-    #     for key, value in param_dict.items():
-    #         tensor = value.asnumpy().astype(np.float32)
-    #         param_dict[key] = Parameter(tensor, key)
-    # load_param_into_net(net, param_dict)
+    param_dict = load_checkpoint(ckpt_path)
+    if args_opt.device_target == "GPU":
+        for key, value in param_dict.items():
+            tensor = value.asnumpy().astype(np.float32)
+            param_dict[key] = Parameter(tensor, key)
+    load_param_into_net(net, param_dict)
 
     net.set_train(False)
     device_type = "Ascend" if context.get_context("device_target") == "Ascend" else "Others"
