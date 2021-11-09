@@ -61,6 +61,7 @@ def get_dataset(train):
                            preprocess_fn(img, img_shape, boxes, labels, valid_num, image_id, 0.5))
         dataset = dataset.map(input_columns=['img', 'img_shape', 'boxes', 'labels', 'valid_num', 'image_id'],
                               output_columns=['img', 'img_shape', 'boxes', 'labels', 'valid_num'],
+                              column_order=['img', 'img_shape', 'boxes', 'labels', 'valid_num'],
                               operations=preprocess_func)
     else:
         preprocess_func = (lambda img, img_shape, boxes, labels, valid_num, image_id:
@@ -187,6 +188,6 @@ def evaluate_and_write_result_files(model, dataset, generator):
 
 
 if __name__ == '__main__':
-    generator, dataset = get_dataset(False)
-    model = get_detection_model(False)
-    evaluate_and_write_result_files(model, dataset, generator)
+    generator, dataset = get_dataset(True)
+    model = get_detection_model(True)
+    train(model, dataset)

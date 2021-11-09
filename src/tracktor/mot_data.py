@@ -377,7 +377,7 @@ def preprocess_fn(img, img_shape, boxes, labels, valid_num, image_id, flip_ratio
         if flip_ratio == -1:
             return img, img_shape, boxes, labels, valid_num, image_id
         else:
-            return img, np.asarray((config.img_height, config.img_widht, 1.0), dtype=np.float32), boxes, labels, valid_num
+            return img, np.asarray((config.img_height, config.img_width, 1.0), dtype=np.float32), boxes, labels, valid_num
     img_data = img
     img_data = np.flip(img_data, axis=1)
     flipped = boxes.copy()
@@ -386,5 +386,5 @@ def preprocess_fn(img, img_shape, boxes, labels, valid_num, image_id, flip_ratio
     flipped[..., 0::4] = w - boxes[..., 2::4] - 1
     flipped[..., 2::4] = w - boxes[..., 0::4] - 1
 
-    return img_data, np.asarray((config.img_height, config.img_widht, 1.0), dtype=np.float32), flipped, labels, valid_num
+    return img_data, np.asarray((config.img_height, config.img_width, 1.0), dtype=np.float32), flipped, labels, valid_num
 
