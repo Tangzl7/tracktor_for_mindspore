@@ -98,9 +98,9 @@ config = ed({
 
     # test proposal
     "rpn_nms_across_levels": False,
-    "rpn_nms_pre": 200,
-    "rpn_nms_post": 200,
-    "rpn_max_num": 200,
+    "rpn_nms_pre": 1000,
+    "rpn_nms_post": 1000,
+    "rpn_max_num": 1000,
     "rpn_nms_thr": 0.7,
     "rpn_min_bbox_min_size": 0,
     "test_score_thr": 0.05,
@@ -112,7 +112,7 @@ config = ed({
     "rpn_head_weight": 1.0,
 
     # LR
-    "base_lr": 0.001,
+    "base_lr": 0.00001,
     "warmup_step": 500,
     "warmup_ratio": 1/16.0,
     "sgd_step": [8, 11],
@@ -126,17 +126,17 @@ config = ed({
     "epoch_size": 30,
     "save_checkpoint": True,
     "save_checkpoint_epochs": 1,
-    "keep_checkpoint_max": 5,
+    "keep_checkpoint_max": 10,
     "save_checkpoint_path": "./ckpt",
 
     # Number of threads used to process the dataset in parallel
     "num_parallel_workers": 8,
     # Parallelize Python operations with multiple worker processes
     "python_multiprocessing": False,
-    "mindrecord_dir": "./MindRecord_COCO_TRAIN",
+    "mindrecord_dir": "./data/MindRecord_COCO_TRAIN",
     "coco_root": "./data/tiny_coco-master",
     "train_data_type": "train2017",
-    "val_data_type": "val2017",
+    "val_data_type": "train2017",
     "instance_set": "annotations/instances_{}.json",
     "coco_classes": ('background', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
                      'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
@@ -153,5 +153,5 @@ config = ed({
                      'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
                      'refrigerator', 'book', 'clock', 'vase', 'scissors',
                      'teddy bear', 'hair drier', 'toothbrush'),
-    "num_classes": 81
+    "num_classes": 2
 })

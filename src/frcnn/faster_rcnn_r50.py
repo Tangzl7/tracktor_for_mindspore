@@ -403,17 +403,17 @@ class Faster_Rcnn_Resnet50(nn.Cell):
                 res_labels_tuple += (cls_labels,)
                 res_masks_tuple += (_mask_n,)
 
-            res_boxes_start = self.concat(res_boxes_tuple[:self.concat_start])
-            res_labels_start = self.concat(res_labels_tuple[:self.concat_start])
-            res_masks_start = self.concat(res_masks_tuple[:self.concat_start])
+            # res_boxes_start = self.concat(res_boxes_tuple[:self.concat_start])
+            # res_labels_start = self.concat(res_labels_tuple[:self.concat_start])
+            # res_masks_start = self.concat(res_masks_tuple[:self.concat_start])
+            #
+            # res_boxes_end = self.concat(res_boxes_tuple[self.concat_start:self.concat_end])
+            # res_labels_end = self.concat(res_labels_tuple[self.concat_start:self.concat_end])
+            # res_masks_end = self.concat(res_masks_tuple[self.concat_start:self.concat_end])
 
-            res_boxes_end = self.concat(res_boxes_tuple[self.concat_start:self.concat_end])
-            res_labels_end = self.concat(res_labels_tuple[self.concat_start:self.concat_end])
-            res_masks_end = self.concat(res_masks_tuple[self.concat_start:self.concat_end])
-
-            res_boxes = self.concat((res_boxes_start, res_boxes_end))
-            res_labels = self.concat((res_labels_start, res_labels_end))
-            res_masks = self.concat((res_masks_start, res_masks_end))
+            res_boxes = self.concat(res_boxes_tuple[:self.concat_end])
+            res_labels = self.concat(res_labels_tuple[:self.concat_end])
+            res_masks = self.concat(res_masks_tuple[:self.concat_end])
 
             reshape_size = (self.num_classes - 1) * self.rpn_max_num
             res_boxes = self.reshape(res_boxes, (1, reshape_size, 5))

@@ -33,8 +33,8 @@ set_seed(1)
 
 parser = argparse.ArgumentParser(description="frcnn evaluation")
 parser.add_argument("--dataset", type=str, default="coco", help="Dataset, default is coco.")
-parser.add_argument("--ann_file", type=str, default="./cocodataset/annotations/instances_val2017.json", help="Ann file, default is val.json.")
-parser.add_argument("--checkpoint_path", type=str, default="./ckpt/ckpt_0/faster_rcnn-12_7393.ckpt", help="Checkpoint file path.")
+parser.add_argument("--ann_file", type=str, default="./data/tiny_coco-master/annotations/instances_train2017.json", help="Ann file, default is val.json.")
+parser.add_argument("--checkpoint_path", type=str, default="./ckpt/ckpt_0/faster_rcnn_2-30_32.ckpt", help="Checkpoint file path.")
 parser.add_argument("--device_target", type=str, default="GPU",
                     help="device where the code will be implemented, default is Ascend")
 parser.add_argument("--device_id", type=int, default=0, help="Device id, default is 0.")
@@ -109,7 +109,7 @@ def fasterrcnn_eval(dataset_path, ckpt_path, ann_file):
     eval_types = ["bbox"]
     result_files = results2json(dataset_coco, outputs, "./results.pkl")
 
-    coco_eval(result_files, eval_types, dataset_coco, single_result=True)
+    print(coco_eval(result_files, eval_types, dataset_coco, single_result=True))
 
 
 if __name__ == '__main__':
