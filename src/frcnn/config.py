@@ -103,7 +103,7 @@ config = ed({
     "rpn_max_num": 1000,
     "rpn_nms_thr": 0.7,
     "rpn_min_bbox_min_size": 0,
-    "test_score_thr": 0.05,
+    "test_score_thr": 0.8,
     "test_iou_thr": 0.5,
     "test_max_per_img": 100,
     "test_batch_size": 1,
@@ -112,21 +112,21 @@ config = ed({
     "rpn_head_weight": 1.0,
 
     # LR
-    "base_lr": 0.00001,
+    "base_lr": 0.02,
     "warmup_step": 500,
     "warmup_ratio": 1/16.0,
     "sgd_step": [8, 11],
     "sgd_momentum": 0.9,
 
     # train
-    "batch_size": 1,
+    "batch_size": 16,
     "loss_scale": 256,
     "momentum": 0.9,
     "weight_decay": 0.0005,
     "epoch_size": 30,
     "save_checkpoint": True,
     "save_checkpoint_epochs": 1,
-    "keep_checkpoint_max": 10,
+    "keep_checkpoint_max": 15,
     "save_checkpoint_path": "./ckpt",
 
     # Number of threads used to process the dataset in parallel

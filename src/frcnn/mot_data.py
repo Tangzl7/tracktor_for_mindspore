@@ -150,11 +150,34 @@ class MOTObjDetectDatasetGenerator:
 
             boxes[i, 0], boxes[i, 1] = x1, y1
             boxes[i, 2], boxes[i, 3] = x2, y2
-        return boxes, np.ones((num_objs,)), np.ones((num_objs,), dtype=np.bool_), np.array([idx])
+        return boxes, np.ones((num_objs,), dtype=np.float32), np.ones((num_objs,), dtype=np.bool_), np.array([idx])
+
+    def imnormalize_column(self, img):
+        """imnormalize operation for image"""
+        mean = np.asarray([123.675, 116.28, 103.53])
+        std = np.asarray([58.395, 57.12, 57.375])
+        img_data = img.copy().astype(np.float32)
+        cv2.cvtColor(img_data, cv2.COLOR_BGR2RGB, img_data)  # inplace
+        cv2.subtract(img_data, np.float64(mean.reshape(1, -1)), img_data)  # inplace
+        cv2.multiply(img_data, 1 / np.float64(std.reshape(1, -1)), img_data)  # inplace
+
+        img_data = img_data.astype(np.float32)
+        return img_data
+
+    def transpose_column(self, img):
+        """transpose operation for image"""
+        img_data = img.transpose(2, 0, 1).copy()
+        img_data = img_data.astype(np.float32)
+
+        return img_data
 
     def __getitem__(self, idx):
         img_path = self._img_paths[idx]
-        img = np.array(Image.open(img_path).convert("RGB"))
+        img_rgb = np.array(Image.open(img_path).convert("RGB"))
+        img = img_rgb.copy()
+        img[:, :, 0] = img_rgb[:, :, 2]
+        img[:, :, 1] = img_rgb[:, :, 1]
+        img[:, :, 2] = img_rgb[:, :, 0]
         w_scale = self._width / img.shape[1]
         h_scale = self._height / img.shape[0]
         img_shape = np.array((img.shape[0], img.shape[1]))
@@ -172,6 +195,9 @@ class MOTObjDetectDatasetGenerator:
         # img_shape = np.asarray((self._height, self._width, 1.0), dtype=np.float32)
         img_shape = np.append(img_shape, (scale_factor_, scale_factor_))
         img_shape = np.asarray(img_shape, dtype=np.float32)
+
+        img = self.imnormalize_column(img)
+        img = self.transpose_column(img)
 
         return img, img_shape, boxes, labels, valid_num, image_id
 

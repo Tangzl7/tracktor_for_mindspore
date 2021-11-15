@@ -451,6 +451,111 @@ class Faster_Rcnn_Resnet50(nn.Cell):
 
         return multi_level_anchors
 
+    def test(self, img_data, img_metas, gt_bboxes=1, gt_labels=1, gt_valids=1):
+        x = self.backbone(img_data)
+        x = self.fpn_ncek(x)
+
+        # cls_score: tuple: 5,  batch*3*height*width
+        # bbox_pred: tuple: 5, batch*3*4*height*width
+        # self.anchor_list: tuple: 5, 3*width*height
+        rpn_loss, cls_score, bbox_pred, rpn_cls_loss, rpn_reg_loss, _ = self.rpn_with_loss.test(x, img_metas, self.anchor_list, gt_bboxes, self.gt_labels_stage1, gt_valids)
+
+        # proposal: tuple: batch, 1000*5
+        # proposal_mask: tuple: batch, 1000*5
+        if self.training:
+            proposal, proposal_mask = self.proposal_generator(cls_score, bbox_pred, self.anchor_list)
+        else:
+            proposal, proposal_mask = self.proposal_generator_test(cls_score, bbox_pred, self.anchor_list)
+
+        gt_labels = self.cast(gt_labels, mstype.int32)
+        gt_valids = self.cast(gt_valids, mstype.int32)
+        bboxes_tuple = ()
+        deltas_tuple = ()
+        labels_tuple = ()
+        mask_tuple = ()
+        if self.training:
+            for i in range(self.train_batch_size):
+                gt_bboxes_i = self.squeeze(gt_bboxes[i:i + 1:1, ::])
+
+                gt_labels_i = self.squeeze(gt_labels[i:i + 1:1, ::])
+                gt_labels_i = self.cast(gt_labels_i, mstype.uint8)
+
+                gt_valids_i = self.squeeze(gt_valids[i:i + 1:1, ::])
+                gt_valids_i = self.cast(gt_valids_i, mstype.bool_)
+
+                bboxes, deltas, labels, mask = self.bbox_assigner_sampler_for_rcnn(gt_bboxes_i,
+                                                                                   gt_labels_i,
+                                                                                   proposal_mask[i],
+                                                                                   proposal[i][::, 0:4:1],
+                                                                                   gt_valids_i)
+                bboxes_tuple += (bboxes,)
+                deltas_tuple += (deltas,)
+                labels_tuple += (labels,)
+                mask_tuple += (mask,)
+
+            bbox_targets = self.concat(deltas_tuple)
+            rcnn_labels = self.concat(labels_tuple)
+            bbox_targets = F.stop_gradient(bbox_targets)
+            rcnn_labels = F.stop_gradient(rcnn_labels)
+            rcnn_labels = self.cast(rcnn_labels, mstype.int32)
+        else:
+            # mask_tuple: tuple: batch, (1000, )
+            mask_tuple += proposal_mask
+            bbox_targets = proposal_mask
+            rcnn_labels = proposal_mask
+            # bboxes_tuple: tuple: batch, (1000, 4)
+            for p_i in proposal:
+                bboxes_tuple += (p_i[::, 0:4:1],)
+
+        if self.training:
+            if self.train_batch_size > 1:
+                bboxes_all = self.concat(bboxes_tuple)
+            else:
+                bboxes_all = bboxes_tuple[0]
+            rois = self.concat_1((self.roi_align_index_tensor, bboxes_all))
+        else:
+            if self.test_batch_size > 1:
+                bboxes_all = self.concat(bboxes_tuple)
+            else:
+                bboxes_all = bboxes_tuple[0]
+            if self.device_type == "Ascend":
+                bboxes_all = self.cast(bboxes_all, mstype.float16)
+            rois = self.concat_1((self.roi_align_index_test_tensor, bboxes_all))
+        # rois: (batch*1000, 5)
+        rois = self.cast(rois, mstype.float32)
+        rois = F.stop_gradient(rois)
+        # roi_feats: nums*256*7*7
+        if self.training:
+            roi_feats = self.roi_align.test(rois,
+                                       self.cast(x[0], mstype.float32),
+                                       self.cast(x[1], mstype.float32),
+                                       self.cast(x[2], mstype.float32),
+                                       self.cast(x[3], mstype.float32))
+        else:
+            roi_feats = self.roi_align_test(rois,
+                                            self.cast(x[0], mstype.float32),
+                                            self.cast(x[1], mstype.float32),
+                                            self.cast(x[2], mstype.float32),
+                                            self.cast(x[3], mstype.float32))
+
+        roi_feats = self.cast(roi_feats, self.ms_type)
+        rcnn_masks = self.concat(mask_tuple)
+        rcnn_masks = F.stop_gradient(rcnn_masks)
+        rcnn_mask_squeeze = self.squeeze(self.cast(rcnn_masks, mstype.bool_))
+        # rcnn_cls_loss: cls layer result, (nums, 81)  rcnn_reg_loss: reg layer result, (nums, 81*4)
+        rcnn_loss, rcnn_cls_loss, rcnn_reg_loss, _ = self.rcnn(roi_feats,
+                                                               bbox_targets,
+                                                               rcnn_labels,
+                                                               rcnn_mask_squeeze)
+
+        output = ()
+        if self.training:
+            output += (rpn_loss, rcnn_loss, rpn_cls_loss, rpn_reg_loss, rcnn_cls_loss, rcnn_reg_loss)
+        else:
+            output = self.get_det_bboxes(rcnn_cls_loss, rcnn_reg_loss, rcnn_masks, bboxes_all, img_metas, False)
+
+        return output
+
 class FasterRcnn_Infer(nn.Cell):
     def __init__(self, config):
         super(FasterRcnn_Infer, self).__init__()
