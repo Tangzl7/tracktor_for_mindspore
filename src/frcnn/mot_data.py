@@ -157,9 +157,9 @@ class MOTObjDetectDatasetGenerator:
         mean = np.asarray([123.675, 116.28, 103.53])
         std = np.asarray([58.395, 57.12, 57.375])
         img_data = img.copy().astype(np.float32)
-        cv2.cvtColor(img_data, cv2.COLOR_BGR2RGB, img_data)  # inplace
-        cv2.subtract(img_data, np.float64(mean.reshape(1, -1)), img_data)  # inplace
-        cv2.multiply(img_data, 1 / np.float64(std.reshape(1, -1)), img_data)  # inplace
+        cv2.cvtColor(img_data, cv2.COLOR_BGR2RGB, img_data)
+        cv2.subtract(img_data, np.float64(mean.reshape(1, -1)), img_data)
+        cv2.multiply(img_data, 1 / np.float64(std.reshape(1, -1)), img_data)
 
         img_data = img_data.astype(np.float32)
         return img_data

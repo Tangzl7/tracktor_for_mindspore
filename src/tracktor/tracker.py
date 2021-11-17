@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from collections import deque
 
-from src.tracktor.util import clip_boxes
+from src.tracktor.utils import clip_boxes, resize_boxes
 
 import mindspore as ms
 from mindspore import Tensor
@@ -34,7 +34,14 @@ class Tracker():
         self.number_of_iterations = tracker_cfg['number_of_iterations']
         self.termination_eps = tracker_cfg['termination_eps']
 
-        self.reset()
+        self.tracks = []
+        self.inactive_tracks = []
+        self.track_num = 0
+        self.im_index = 0
+        self.results = {}
+
+        self.det_nms = ops.NMSWithMask(self.detection_nms_thresh)
+        self.reg_nms = ops.NMSWithMask(self.regression_nms_thresh)
 
     def reset(self, hard=True):
         self.tracks = []  # active target trajectory set
@@ -58,7 +65,7 @@ class Tracker():
     def add(self, new_det_box):
         num_new = len(new_det_box)
         for i in range(num_new):
-            self.tracks.append(Track(ops.Reshape()(new_det_box[i], (1, -1)),
+            self.tracks.append(Track(new_det_box[i].reshape((1, -1)),
                                      self.track_num + i, self.inactive_patience, self.max_features_num))
 
         self.track_num += num_new
@@ -68,20 +75,18 @@ class Tracker():
 
     def regress_tracks(self, blob):
         boxes_in = self.get_box()  # get the track's pos
-        boxes, scores = self.obj_detect.predict_boxes((boxes_in, ))
-        pos = clip_boxes(Tensor(boxes), Tensor(blob['im_info'][0][:2]))
+        boxes_in = resize_boxes(boxes_in, blob['img_shape'][0][:2], blob['img'].shape[-2:])
+        poses, scores = self.obj_detect.predict_boxes((Tensor(boxes_in),))
+        boxes = np.concatenate((poses, np.expand_dims(scores, axis=-1)), axis=1)
+        boxes = clip_boxes(boxes, blob['img_shape'][0][:2])
 
         for i in range(len(self.tracks) - 1, -1, -1):
             t = self.tracks[i]
-            tmp_box = t.box.asnumpy().copy()
-            scores[i] = 0.9
-            tmp_box[0][-1] = scores[i]
-            t.box = Tensor(tmp_box)
+            t.box[0][-1] = boxes[i, -1]
             if scores[i] <= self.regression_person_thresh:
                 self.tracks_to_inactive([t])
             else:
-                tmp_box_ = ops.Concat(-1)((pos[i], Tensor([scores[i]])))
-                t.box = ops.Reshape()(tmp_box_, (-1, 5))
+                t.box[0] = boxes[i]
 
     """get the positions of all active tracks"""
 
@@ -89,9 +94,9 @@ class Tracker():
         if len(self.tracks) == 1:
             features = self.tracks[0].box
         elif len(self.tracks) > 1:
-            features = ops.Concat(0)([t.box for t in self.tracks])
+            features = np.concatenate([t.box for t in self.tracks])
         else:
-            features = Tensor(np.array([]))
+            features = np.array([])
         return features
 
     """check if inactive tracks should be removed"""
@@ -109,66 +114,75 @@ class Tracker():
     """
 
     def step(self, blob):
+        print("tracks: ", len(self.tracks))
         for t in self.tracks:
-            t.last_box = t.box
+            t.last_box = t.box.copy()
 
         ###########################
         # Look for new detections #
         ###########################
-        self.obj_detect.load_image(blob['data'], blob['im_info'])
-        boxes, cls = self.obj_detect.detect(blob['data'], blob['im_info'])
-        boxes, cls = np.squeeze(boxes), np.squeeze(cls)
-        # filter out tracks that have too low person score
-        boxes = boxes[cls == 1, :]
-        # for test
-        # boxes = np.array(
-        #     [[0.023, 0.032, 0.445, 0.664, 0.6], [0.023, 0.032, 0.445, 0.664, 0.5], [0.065, 0.021, 0.556, 0.785, 0.8],
-        #      [0.032, 0.324, 0.232, 0.435, 0.2]])
-        inds = ops.Greater()(Tensor(boxes[:, -1]), self.detection_person_thresh).asnumpy()
+        self.obj_detect.load_image(blob['img'], blob['img_shape'])
+        if self.public_detections:
+            dets = Tensor(blob['dets'])
+            if len(dets) > 0:
+                poses, scores = self.obj_detect.predict_boxes((dets,))
+                boxes = np.concatenate((poses, np.expand_dims(scores, axis=-1)), axis=1)
+            else:
+                boxes = np.array([])
+        else:
+            boxes, cls = self.obj_detect.detect(blob['img'], blob['img_shape'])
+            boxes, cls = np.squeeze(boxes), np.squeeze(cls)
+            boxes = boxes[cls == 0, :]
+
+        if len(boxes) > 0:
+            boxes = clip_boxes(boxes, blob['img_shape'][0][:2])
+            inds = np.greater(boxes[:, -1], self.detection_person_thresh)
+        else:
+            inds = np.array([])
+
+        if len(inds) > 0:
+            det_boxes = boxes[inds]
+        else:
+            det_boxes = np.array([])
 
         ##################
         # Predict tracks #
         ##################
-        num_tracks = 0
-        nms_inp_reg = Tensor(np.array([]))
         if len(self.tracks):
             # regress
             self.regress_tracks(blob)
 
             if len(self.tracks):
                 nms_inp_reg = self.get_box()
-                nms_keep_det, _, nms_keep_masks = ops.NMSWithMask(self.regression_nms_thresh)(nms_inp_reg)
+                nms_keep_det, _, nms_keep_masks = self.reg_nms(Tensor(nms_inp_reg, dtype=ms.dtype.float32))
                 nms_keep_det, nms_keep_masks = nms_keep_det.asnumpy(), nms_keep_masks.asnumpy()
                 nms_keep_det = nms_keep_det[nms_keep_masks, :]
                 for i in range(len(nms_inp_reg)):
-                    if nms_inp_reg[i].asnumpy() not in nms_keep_det:
-                        self.tracks_to_inactive(self.tracks[i])
-                nms_inp_reg = Tensor(nms_keep_det)
+                    if nms_inp_reg[i] not in nms_keep_det:
+                        self.tracks_to_inactive([self.tracks[i]])
 
         #####################
         # Create new tracks #
         #####################
-        nms_inp_det = boxes[inds, :]
-        if len(nms_inp_det) > 0:
-            nms_inp_det, _, masks = ops.NMSWithMask(self.detection_nms_thresh)(
-                Tensor(nms_inp_det, dtype=ms.dtype.float32))
-            nms_inp_det, masks = nms_inp_det.asnumpy(), masks.asnumpy()
-            nms_inp_det = Tensor(nms_inp_det[masks, :])
+        if len(det_boxes) > 0:
+            det_boxes, _, masks = self.det_nms(Tensor(det_boxes, dtype=ms.dtype.float32))
+            det_boxes, masks = det_boxes.asnumpy(), masks.asnumpy()
+            det_boxes = det_boxes[masks, :]
             # check with every track in a single run (problem if tracks delete each other)
-            for i in range(num_tracks):
-                nms_inp = ops.Concat()(nms_inp_reg[i], nms_inp_det)
-                nms_keep_det, _, nms_keep_masks = ops.NMSWithMask(self.detection_nms_thresh)(nms_inp)
-                for j in range(len(nms_keep_masks)):
-                    if nms_keep_masks[j] == True and nms_keep_det[j] == nms_inp_reg[i]:
-                        nms_keep_masks[j] = False
-                        break
+            for i in range(len(self.tracks)):
+                track_box = self.tracks[i].box.copy()
+                track_box[0][-1] = 2.0
+                nms_track_boxes = np.concatenate((track_box, det_boxes))
+                nms_keep_det, _, nms_keep_masks = self.det_nms(Tensor(nms_track_boxes, dtype=ms.dtype.float32))
                 nms_keep_det, nms_keep_masks = nms_keep_det.asnumpy(), nms_keep_masks.asnumpy()
-                nms_inp_det = Tensor(nms_keep_det[nms_keep_masks, :])
+                nms_keep_masks[0] = False
+                det_boxes = nms_keep_det[nms_keep_masks, :]
+                if len(det_boxes) == 0:
+                    break
 
-        if len(nms_inp_det) > 0:
+        if len(det_boxes) > 0:
             # add new track
-            if len(nms_inp_det) > 0:
-                self.add(nms_inp_det)
+            self.add(det_boxes)
 
         ####################
         # Generate Results #
@@ -178,12 +192,17 @@ class Tracker():
             if track_ind not in self.results.keys():
                 self.results[track_ind] = {}
             box = t.box[0]
-            self.results[track_ind][self.im_index] = box.asnumpy()
+            self.results[track_ind][self.im_index] = box.copy()
+
+        for t in self.inactive_tracks:
+            t.count_inactive += 1
+
+        self.inactive_tracks = [
+            t for t in self.inactive_tracks if t.has_positive_area() and t.count_inactive <= self.inactive_patience
+        ]
 
         self.im_index += 1
-        self.last_image = blob['data'][0]
-        self.clear_inactive()
-
+        self.last_image = blob['img'][0]
 
     def get_result(self):
         return self.results
@@ -205,6 +224,9 @@ class Track(object):
         self.gt_id = None
 
     """tests if the object has been too long inactive and is to remove"""
+
+    def has_positive_area(self):
+        return self.box[0][2] > self.box[0][0] and self.box[0][3] > self.box[0][1]
 
     def is_to_purge(self):
         self.count_inactive += 1

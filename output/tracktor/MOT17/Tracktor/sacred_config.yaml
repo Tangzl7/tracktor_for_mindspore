@@ -1,17 +1,17 @@
-seed: 893608585
+seed: 442742148
 tracktor:
-  dataset: mot17_train_FRCNN17
+  dataset: mot17_09_FRCNN
   desription: null
-  frame_split:
-  - 0.0
-  - 1.0
+  device_target: GPU
+  frame_range:
+    end: 1.0
+    start: 0.0
   interpolate: false
+  load_results: false
   module_name: MOT17
   name: Tracktor
   network: frcnn
-  obj_detect_weights: output/frcnn/res101/mot_2017_train/180k/res101_faster_rcnn_iter_180000.pth
-  reid_network_config: output/tracktor/siamese/res50-mot17-batch_hard/sacred_config.yaml
-  reid_network_weights: output/tracktor/siamese/res50-mot17-batch_hard/ResNet_iter_25245.pth
+  obj_detect_weights: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_4-70_32.ckpt
   seed: 12345
   tracker:
     detection_nms_thresh: 0.3
@@ -26,7 +26,7 @@ tracktor:
     regression_nms_thresh: 0.6
     regression_person_thresh: 0.5
     reid_iou_threshold: 0.2
-    reid_sim_threshold: 2.0
+    reid_sim_threshold: 200.0
     termination_eps: 1.0e-05
     warp_mode: cv2.MOTION_EUCLIDEAN
-  write_images: true
+  write_images: false

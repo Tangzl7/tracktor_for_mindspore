@@ -24,7 +24,11 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 		self.concat_3 = ops.Concat()
 
 	def detect(self, img_data, img_metas):
-		self.set_train(False)
+		if isinstance(img_data, np.ndarray):
+			img_data = Tensor(img_data)
+		if isinstance(img_metas, np.ndarray):
+			img_metas = Tensor(img_metas)
+
 		output = self(img_data, img_metas)
 
 		pred_boxes, pred_cls, pred_mask = output[0].asnumpy(), output[1].asnumpy(), output[2].asnumpy()
@@ -92,19 +96,15 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 
 		pred_boxes, pred_cls, pred_mask = output[0][1].asnumpy(), output[1].asnumpy(), output[2].asnumpy().astype(bool)
 		pred_boxes, pred_cls = pred_boxes[pred_mask, :], pred_cls[pred_mask, 1]
-		# result_boxes, result_cls = [], []
-		#
-		# for j in range(self.config.test_batch_size):
-		# 	pred_boxes_j = np.squeeze(pred_boxes[j, :, :])
-		# 	pred_cls_j = np.squeeze(pred_cls[j, :, :])
-		# 	pred_mask_j = np.squeeze(pred_mask[j, :, :])
-		# 	result_boxes.append(pred_boxes_j[pred_mask_j, :])
-		# 	result_cls.append(pred_cls_j[pred_mask_j])
 
 		return pred_boxes, pred_cls
 
 	def load_image(self, img_data, img_metas):
-		self.set_train(False)
+		if isinstance(img_data, np.ndarray):
+			img_data = Tensor(img_data)
+		if isinstance(img_metas, np.ndarray):
+			img_metas = Tensor(img_metas)
+
 		self.img_metas = img_metas
 		self.preprocessed_image = img_data
 		self.features = self.backbone(img_data)
