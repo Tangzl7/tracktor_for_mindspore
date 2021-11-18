@@ -13,7 +13,7 @@
 # limitations under the License.
 # ===========================================================================
 """
-network config setting, will be used in obj_det_training.py and obj_det_eval.py
+network config setting, will be used in train.py and eval.py
 """
 from easydict import EasyDict as ed
 
@@ -133,5 +133,25 @@ config = ed({
     "num_parallel_workers": 8,
     # Parallelize Python operations with multiple worker processes
     "python_multiprocessing": False,
+    "mindrecord_dir": "./data/MindRecord_COCO_TRAIN",
+    "coco_root": "./data/tiny_coco-master",
+    "train_data_type": "train2017",
+    "val_data_type": "train2017",
+    "instance_set": "annotations/instances_{}.json",
+    "coco_classes": ('background', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
+                     'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
+                     'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
+                     'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra',
+                     'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
+                     'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
+                     'kite', 'baseball bat', 'baseball glove', 'skateboard',
+                     'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
+                     'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+                     'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
+                     'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed',
+                     'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
+                     'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
+                     'refrigerator', 'book', 'clock', 'vase', 'scissors',
+                     'teddy bear', 'hair drier', 'toothbrush'),
     "num_classes": 2
 })

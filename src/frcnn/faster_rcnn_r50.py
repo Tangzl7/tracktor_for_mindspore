@@ -204,7 +204,7 @@ class Faster_Rcnn_Resnet50(nn.Cell):
         self.roi_align_index_tensor = Tensor(np.concatenate(roi_align_index))
         self.roi_align_index_test_tensor = Tensor(np.concatenate(roi_align_index_test))
 
-    def construct(self, img_data, img_metas, gt_bboxes, gt_labels, gt_valids):
+    def construct(self, img_data, img_metas, gt_bboxes=1, gt_labels=1, gt_valids=1):
         x = self.backbone(img_data)
         x = self.fpn_ncek(x)
 
@@ -403,6 +403,14 @@ class Faster_Rcnn_Resnet50(nn.Cell):
                 res_labels_tuple += (cls_labels,)
                 res_masks_tuple += (_mask_n,)
 
+            # res_boxes_start = self.concat(res_boxes_tuple[:self.concat_start])
+            # res_labels_start = self.concat(res_labels_tuple[:self.concat_start])
+            # res_masks_start = self.concat(res_masks_tuple[:self.concat_start])
+            #
+            # res_boxes_end = self.concat(res_boxes_tuple[self.concat_start:self.concat_end])
+            # res_labels_end = self.concat(res_labels_tuple[self.concat_start:self.concat_end])
+            # res_masks_end = self.concat(res_masks_tuple[self.concat_start:self.concat_end])
+
             res_boxes = self.concat(res_boxes_tuple[:self.concat_end])
             res_labels = self.concat(res_labels_tuple[:self.concat_end])
             res_masks = self.concat(res_masks_tuple[:self.concat_end])
@@ -443,3 +451,12 @@ class Faster_Rcnn_Resnet50(nn.Cell):
 
         return multi_level_anchors
 
+class FasterRcnn_Infer(nn.Cell):
+    def __init__(self, config):
+        super(FasterRcnn_Infer, self).__init__()
+        self.network = Faster_Rcnn_Resnet50(config)
+        self.network.set_train(False)
+
+    def construct(self, img_data, img_metas):
+        output = self.network(img_data, img_metas, None, None, None)
+        return output
