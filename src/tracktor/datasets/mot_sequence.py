@@ -46,12 +46,13 @@ class MOTSequence:
         w_scale = self._width / img.shape[1]
         h_scale = self._height / img.shape[0]
         img_shape = np.array((img.shape[0], img.shape[1]))
-        scale_factor_ = min(max(self._height, self._width) / max(img.shape[0], img.shape[1]),
-                            min(self._height, self._width) / min(img.shape[0], img.shape[1]))
+        scale_factor_ = [self._height / img.shape[0], self._width / img.shape[1]]
+        # scale_factor_ = min(max(self._height, self._width) / max(img.shape[0], img.shape[1]),
+        #                     min(self._height, self._width) / min(img.shape[0], img.shape[1]))
         scale_factor = np.array(
             [w_scale, h_scale, w_scale, h_scale], dtype=np.float32)
         img = cv2.resize(img, (self._width, self._height), interpolation=cv2.INTER_LINEAR)
-        img_shape = np.append(img_shape, (scale_factor_, scale_factor_))
+        img_shape = np.append(img_shape, (scale_factor_[0], scale_factor_[1]))
         img_shape = np.asarray(img_shape, dtype=np.float32)
 
         img = self.imnormalize_column(img)
