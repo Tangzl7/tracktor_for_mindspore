@@ -4,8 +4,8 @@ import numpy as np
 import os.path as osp
 
 from src.frcnn.config import config
-from src.util import bbox2result_1image
-from src.frcnn.lr_schedule import dynamic_lr
+from src.frcnn.util import bbox2result_1image
+from src.frcnn.lr_schedule import dynamic_lr_1
 from src.frcnn.mot_data import preprocess_fn
 from src.frcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
 from src.frcnn.mot_data import MOTObjDetectDatasetGenerator
@@ -94,7 +94,7 @@ def test(model, dataset):
 
 def train(model, dataset):
     loss = LossNet()
-    lr = Tensor(dynamic_lr(config, dataset.get_dataset_size()), mstype.float32)
+    lr = Tensor(dynamic_lr_1(config, dataset.get_dataset_size()), mstype.float32)
 
     opt = SGD(params=model.trainable_params(), learning_rate=lr, momentum=config.momentum,
               weight_decay=config.weight_decay, loss_scale=config.loss_scale)

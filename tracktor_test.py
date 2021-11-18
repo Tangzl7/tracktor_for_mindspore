@@ -80,8 +80,7 @@ def main(tracktor, _config, _log):
             results = seq.load_results(output_dir)
         if not results:
             start = time.time()
-            for i, frame_data in enumerate(seq):
-                print(i)
+            for frame_data in tqdm.tqdm(seq):
                 tracker.step(frame_data)
 
             results = tracker.get_result()

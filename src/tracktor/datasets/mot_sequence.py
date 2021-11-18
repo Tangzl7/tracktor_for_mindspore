@@ -47,8 +47,6 @@ class MOTSequence:
         h_scale = self._height / img.shape[0]
         img_shape = np.array((img.shape[0], img.shape[1]))
         scale_factor_ = [self._height / img.shape[0], self._width / img.shape[1]]
-        # scale_factor_ = min(max(self._height, self._width) / max(img.shape[0], img.shape[1]),
-        #                     min(self._height, self._width) / min(img.shape[0], img.shape[1]))
         scale_factor = np.array(
             [w_scale, h_scale, w_scale, h_scale], dtype=np.float32)
         img = cv2.resize(img, (self._width, self._height), interpolation=cv2.INTER_LINEAR)

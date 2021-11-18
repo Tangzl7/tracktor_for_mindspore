@@ -4,22 +4,16 @@ import numpy as np
 import os.path as osp
 
 from src.frcnn.config import config
-from src.util import bbox2result_1image
-from src.frcnn.lr_schedule import dynamic_lr
+from src.frcnn.util import bbox2result_1image
 from src.frcnn.mot_data import preprocess_fn
 from src.frcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
 from src.frcnn.mot_data import MOTObjDetectDatasetGenerator
-from src.frcnn.network_define import LossCallBack, WithLossCell, TrainOneStepCell, LossNet
 
-from mindspore.nn import SGD
 import mindspore.dataset as ds
-from mindspore.train import Model
 from mindspore.common import set_seed
 import mindspore.common.dtype as mstype
-from mindspore import context, Parameter, Tensor
-import mindspore.dataset.vision.py_transforms as py_vision
+from mindspore import context, Parameter
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
-from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, TimeMonitor
 
 set_seed(1)
 parser = argparse.ArgumentParser()

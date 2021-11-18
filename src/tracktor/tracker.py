@@ -114,7 +114,6 @@ class Tracker():
     """
 
     def step(self, blob):
-        print("tracks: ", len(self.tracks))
         for t in self.tracks:
             t.last_box = t.box.copy()
 
@@ -157,9 +156,11 @@ class Tracker():
                 nms_keep_det, _, nms_keep_masks = self.reg_nms(Tensor(nms_inp_reg, dtype=ms.dtype.float32))
                 nms_keep_det, nms_keep_masks = nms_keep_det.asnumpy(), nms_keep_masks.asnumpy()
                 nms_keep_det = nms_keep_det[nms_keep_masks, :]
+                tracks_remove = []
                 for i in range(len(nms_inp_reg)):
                     if nms_inp_reg[i] not in nms_keep_det:
-                        self.tracks_to_inactive([self.tracks[i]])
+                        tracks_remove.append(self.tracks[i])
+                self.tracks_to_inactive(tracks_remove)
 
         #####################
         # Create new tracks #

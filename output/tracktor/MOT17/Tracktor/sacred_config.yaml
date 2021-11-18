@@ -1,6 +1,6 @@
-seed: 221911999
+seed: 189968917
 tracktor:
-  dataset: mot17_09_FRCNN
+  dataset: mot17_train_FRCNN
   desription: null
   device_target: GPU
   frame_range:
@@ -11,7 +11,7 @@ tracktor:
   module_name: MOT17
   name: Tracktor
   network: frcnn
-  obj_detect_weights: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_4-70_32.ckpt
+  obj_detect_weights: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn-30_332.ckpt
   seed: 12345
   tracker:
     detection_nms_thresh: 0.3

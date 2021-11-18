@@ -178,12 +178,11 @@ class MOTObjDetectDatasetGenerator:
         img[:, :, 0] = img_rgb[:, :, 2]
         img[:, :, 1] = img_rgb[:, :, 1]
         img[:, :, 2] = img_rgb[:, :, 0]
+
         w_scale = self._width / img.shape[1]
         h_scale = self._height / img.shape[0]
         img_shape = np.array((img.shape[0], img.shape[1]))
         scale_factor_ = [self._height / img.shape[0], self._width / img.shape[1]]
-        # scale_factor_ = min(max(self._height, self._width) / max(img.shape[0], img.shape[1]),
-        #                     min(self._height, self._width) / min(img.shape[0], img.shape[1]))
         scale_factor = np.array(
             [w_scale, h_scale, w_scale, h_scale], dtype=np.float32)
         img = cv2.resize(img, (self._width, self._height), interpolation=cv2.INTER_LINEAR)
@@ -193,7 +192,6 @@ class MOTObjDetectDatasetGenerator:
         boxes[:, 0::2] = np.clip(boxes[:, 0::2], 0, self._width - 1)
         boxes[:, 1::2] = np.clip(boxes[:, 1::2], 0, self._height - 1)
 
-        # img_shape = np.asarray((self._height, self._width, 1.0), dtype=np.float32)
         img_shape = np.append(img_shape, (scale_factor_[0], scale_factor_[1]))
         img_shape = np.asarray(img_shape, dtype=np.float32)
 
@@ -295,12 +293,6 @@ class MOTObjDetectDatasetGenerator:
         # for res in results:
         for im_index, (im_gt, found) in enumerate(zip(gt, gt_found)):
             # Loop through dets an mark TPs and FPs
-
-            # im_index = res['image_id'].item()
-            # im_det = results['boxes']
-            # annotation = self._get_annotation(im_index)
-            # im_gt = annotation['boxes'][annotation['visibilities'].gt(0.5)].cpu().numpy()
-            # found = np.zeros(im_gt.shape[0])
 
             im_det = results[str(im_index)]['boxes']
 
