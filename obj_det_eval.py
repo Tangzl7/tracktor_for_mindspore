@@ -17,21 +17,17 @@ from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
 set_seed(1)
 parser = argparse.ArgumentParser()
-parser.add_argument('--train_mot_dir', default='MOT17Det')
 parser.add_argument('--test_mot_dir', default='MOT17Det')
-parser.add_argument('--only_eval', action='store_true')
-parser.add_argument('--eval_train', action='store_true')
-parser.add_argument('--num_epochs', type=int, default=70)
 parser.add_argument('--lr_drop', type=int, default=20)
 parser.add_argument('--batch_size', type=int, default=1)
 parser.add_argument('--train_vis_threshold', type=float, default=0.25)
 parser.add_argument('--test_vis_threshold', type=float, default=0.25)
-parser.add_argument('--pretraining', default='./ckpt/ckpt_0/faster_rcnn_1-10_332.ckpt')
+parser.add_argument('--pretraining', default='./ckpt/ckpt_0/faster_rcnn_1-21_32.ckpt')
 parser.add_argument('--arch', type=str, default='fasterrcnn_resnet50_fpn')
 
-parser.add_argument("--device_target", type=str, default="Ascend",
+parser.add_argument("--device_target", type=str, default="GPU",
                     help="device where the code will be implemented, default is Ascend")
-parser.add_argument("--device_id", type=int, default=2, help="Device id, default: 2.")
+parser.add_argument("--device_id", type=int, default=0, help="Device id, default: 2.")
 parser.add_argument("--device_num", type=int, default=1, help="Use device nums, default: 1.")
 parser.add_argument("--rank_id", type=int, default=0, help="Rank id, default: 0.")
 
@@ -39,38 +35,23 @@ args = parser.parse_args()
 context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target, device_id=args.device_id)
 
 
-def get_dataset(train):
-    train_data_dir = osp.join(f'./data/{args.train_mot_dir}', 'train')
+def get_dataset():
     test_data_dir = osp.join(f'./data/{args.test_mot_dir}', 'train')
-    train_split_seqs = ['MOT17-02', 'MOT17-04', 'MOT17-05', 'MOT17-09', 'MOT17-10', 'MOT17-11', 'MOT17-13']
-    test_split_seqs = ['MOT17-09']
-    if train:
-        dataset_generator = MOTObjDetectDatasetGenerator(root=train_data_dir, split_seqs=train_split_seqs)
-    else:
-        dataset_generator = MOTObjDetectDatasetGenerator(root=test_data_dir, split_seqs=test_split_seqs)
+    test_split_seqs = ['MOT17-02', 'MOT17-04', 'MOT17-05', 'MOT17-09', 'MOT17-10', 'MOT17-11', 'MOT17-13']
+    dataset_generator = MOTObjDetectDatasetGenerator(root=test_data_dir, split_seqs=test_split_seqs)
     dataset = ds.GeneratorDataset(dataset_generator, ['img', 'img_shape', 'boxes', 'labels', 'valid_num', 'image_id'],
                                   shuffle=False)
-    # dataset = dataset.map(input_columns=['img'], operations=py_vision.ToTensor())
-    if train:
-        preprocess_func = (lambda img, img_shape, boxes, labels, valid_num, image_id:
-                           preprocess_fn(img, img_shape, boxes, labels, valid_num, image_id, 0.5))
-        dataset = dataset.map(input_columns=['img', 'img_shape', 'boxes', 'labels', 'valid_num', 'image_id'],
-                              output_columns=['img', 'img_shape', 'boxes', 'labels', 'valid_num'],
-                              column_order=['img', 'img_shape', 'boxes', 'labels', 'valid_num'],
-                              operations=preprocess_func)
-    else:
-        preprocess_func = (lambda img, img_shape, boxes, labels, valid_num, image_id:
-                           preprocess_fn(img, img_shape, boxes, labels, valid_num, image_id, -1))
-        dataset = dataset.map(input_columns=['img', 'img_shape', 'boxes', 'labels', 'valid_num', 'image_id'],
-                              operations=preprocess_func)
+    preprocess_func = (lambda img, img_shape, boxes, labels, valid_num, image_id:
+                    preprocess_fn(img, img_shape, boxes, labels, valid_num, image_id, -1))
+    dataset = dataset.map(input_columns=['img', 'img_shape', 'boxes', 'labels', 'valid_num', 'image_id'],
+                        operations=preprocess_func)
     dataset = dataset.batch(batch_size=args.batch_size, drop_remainder=True)
     return dataset_generator, dataset
 
 
-def get_detection_model(train):
-    config.num_classes = 2
+def get_detection_model():
     model = Faster_Rcnn_Resnet50(config)
-    model.set_train(train)
+    model.set_train(False)
 
     device_type = "Ascend" if context.get_context("device_target") == "Ascend" else "Others"
     if device_type == "Ascend":
@@ -86,14 +67,6 @@ def evaluate_and_write_result_files(model, dataset, generator):
             tensor = value.asnumpy().astype(np.float32)
             param_dict[key] = Parameter(tensor, key)
     load_param_into_net(model, param_dict)
-    model.set_train(False)
-    # load_path = args.pretraining
-    # if load_path != "":
-    #     param_dict = load_checkpoint(load_path)
-    #     for item in list(param_dict.keys()):
-    #         if item in ("global_step", "learning_rate") or "rcnn.reg_scores" in item or "rcnn.cls_scores" in item:
-    #             param_dict.pop(item)
-    #     load_param_into_net(model, param_dict)
 
     results = {}
     eval_iter = 0
@@ -147,6 +120,6 @@ def evaluate_and_write_result_files(model, dataset, generator):
 
 
 if __name__ == '__main__':
-    generator, dataset = get_dataset(False)
-    model = get_detection_model(False)
+    generator, dataset = get_dataset()
+    model = get_detection_model()
     evaluate_and_write_result_files(model, dataset, generator)

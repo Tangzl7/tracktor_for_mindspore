@@ -9,4 +9,6 @@ results.pkl.bbox.json
 *.pyc
 *.mp4
 *.ckpt
+*.txt
+*.zip
 MindRecord_COCO_TRAIN
