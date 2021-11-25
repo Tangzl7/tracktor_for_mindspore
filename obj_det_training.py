@@ -43,7 +43,8 @@ context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target, d
 
 def get_dataset():
     train_data_dir = osp.join(f'./data/{args.train_mot_dir}', 'train')
-    train_split_seqs = ['MOT17-02', 'MOT17-04', 'MOT17-05', 'MOT17-09', 'MOT17-10', 'MOT17-11', 'MOT17-13']
+    # train_split_seqs = ['MOT17-02', 'MOT17-04', 'MOT17-05', 'MOT17-09', 'MOT17-10', 'MOT17-11', 'MOT17-13']
+    train_split_seqs = ['MOT17-09']
     dataset_generator = MOTObjDetectDatasetGenerator(root=train_data_dir, split_seqs=train_split_seqs)
     dataset = ds.GeneratorDataset(dataset_generator, ['img', 'img_shape', 'boxes', 'labels', 'valid_num', 'image_id'], shuffle=True)
     preprocess_func = (lambda img, img_shape, boxes, labels, valid_num, image_id:
@@ -80,11 +81,18 @@ def train(model, dataset):
     if load_path != "":
         param_dict = load_checkpoint(load_path)
         for item in list(param_dict.keys()):
-            if item in ("global_step", "learning_rate") or "rcnn.reg_scores" in item or "rcnn.cls_scores" in item:
+            if item in ("global_step", "learning_rate") or "rcnn" in item:
                 param_dict.pop(item)
-        load_param_into_net(opt, param_dict)
+        # load_param_into_net(opt, param_dict)
         load_param_into_net(model, param_dict)
         print("load model success...")
+
+    # param_dict = load_checkpoint(args.pretraining)
+    # if args.device_target == "GPU":
+    #     for key, value in param_dict.items():
+    #         tensor = value.asnumpy().astype(np.float32)
+    #         param_dict[key] = Parameter(tensor, key)
+    # load_param_into_net(model, param_dict)
 
     model_with_loss = WithLossCell(model, loss)
     model = TrainOneStepCell(model_with_loss, opt, sens=config.loss_scale)

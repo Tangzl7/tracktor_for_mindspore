@@ -23,7 +23,7 @@ from mindspore.common.initializer import initializer
 from .bbox_assign_sample import BboxAssignSample
 
 
-class RPNHead(nn.Cell):
+class RpnRegClsBlock(nn.Cell):
     """
     Rpn reg cls block for rpn layer
 
@@ -53,7 +53,7 @@ class RPNHead(nn.Cell):
                  bias_cls,
                  weight_reg,
                  bias_reg):
-        super(RPNHead, self).__init__()
+        super(RpnRegClsBlock, self).__init__()
         self.rpn_conv = nn.Conv2d(in_channels, feat_channels, kernel_size=3, stride=1, pad_mode='same',
                                   has_bias=True, weight_init=weight_conv, bias_init=bias_conv)
         self.relu = nn.ReLU()
@@ -119,8 +119,8 @@ class RPN(nn.Cell):
         self.num_layers = 5
         self.real_ratio = Tensor(np.ones((1, 1)).astype(self.dtype))
 
-        self.rpn_head = self._make_rpn_head(in_channels, feat_channels,
-                                                                num_anchors, cls_out_channels)
+        self.rpn_convs_list = nn.layer.CellList(self._make_rpn_layer(self.num_layers, in_channels, feat_channels,
+                                                                     num_anchors, cls_out_channels))
 
         self.transpose = P.Transpose()
         self.reshape = P.Reshape()
@@ -149,7 +149,7 @@ class RPN(nn.Cell):
         self.clsloss = Tensor(np.zeros((1,)).astype(self.dtype))
         self.regloss = Tensor(np.zeros((1,)).astype(self.dtype))
 
-    def _make_rpn_head(self, in_channels, feat_channels, num_anchors, cls_out_channels):
+    def _make_rpn_layer(self, num_layers, in_channels, feat_channels, num_anchors, cls_out_channels):
         """
         make rpn layer for rpn proposal network
 
@@ -161,8 +161,9 @@ class RPN(nn.Cell):
         cls_out_channels (int) - Output channels of classification convolution.
 
         Returns:
-        RPNHead
+        List, list of RpnRegClsBlock cells.
         """
+        rpn_layer = []
 
         shp_weight_conv = (feat_channels, in_channels, 3, 3)
         shp_bias_conv = (feat_channels,)
@@ -179,13 +180,24 @@ class RPN(nn.Cell):
         weight_reg = initializer('Normal', shape=shp_weight_reg, dtype=self.ms_type).to_tensor()
         bias_reg = initializer(0, shape=shp_bias_reg, dtype=self.ms_type).to_tensor()
 
-        rpn_head = RPNHead(in_channels, feat_channels, num_anchors, cls_out_channels, \
-                                        weight_conv, bias_conv, weight_cls, \
-                                        bias_cls, weight_reg, bias_reg)
-        if self.device_type == "Ascend":
-            rpn_head.to_float(mstype.float16)
+        for i in range(num_layers):
+            rpn_reg_cls_block = RpnRegClsBlock(in_channels, feat_channels, num_anchors, cls_out_channels, \
+                                            weight_conv, bias_conv, weight_cls, \
+                                            bias_cls, weight_reg, bias_reg)
+            if self.device_type == "Ascend":
+                rpn_reg_cls_block.to_float(mstype.float16)
+            rpn_layer.append(rpn_reg_cls_block)
 
-        return rpn_head
+        for i in range(1, num_layers):
+            rpn_layer[i].rpn_conv.weight = rpn_layer[0].rpn_conv.weight
+            rpn_layer[i].rpn_cls.weight = rpn_layer[0].rpn_cls.weight
+            rpn_layer[i].rpn_reg.weight = rpn_layer[0].rpn_reg.weight
+
+            rpn_layer[i].rpn_conv.bias = rpn_layer[0].rpn_conv.bias
+            rpn_layer[i].rpn_cls.bias = rpn_layer[0].rpn_cls.bias
+            rpn_layer[i].rpn_reg.bias = rpn_layer[0].rpn_reg.bias
+
+        return rpn_layer
 
     def construct(self, inputs, img_metas, anchor_list, gt_bboxes, gt_labels, gt_valids):
         loss_print = ()
@@ -195,7 +207,7 @@ class RPN(nn.Cell):
         rpn_bbox_pred_total = ()
 
         for i in range(self.num_layers):
-            x1, x2 = self.rpn_head(inputs[i])
+            x1, x2 = self.rpn_convs_list[i](inputs[i])
 
             rpn_cls_score_total = rpn_cls_score_total + (x1,)
             rpn_bbox_pred_total = rpn_bbox_pred_total + (x2,)

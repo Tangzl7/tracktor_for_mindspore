@@ -22,7 +22,7 @@ parser.add_argument('--lr_drop', type=int, default=20)
 parser.add_argument('--batch_size', type=int, default=1)
 parser.add_argument('--train_vis_threshold', type=float, default=0.25)
 parser.add_argument('--test_vis_threshold', type=float, default=0.25)
-parser.add_argument('--pretraining', default='./ckpt/ckpt_0/faster_rcnn_1-21_32.ckpt')
+parser.add_argument('--pretraining', default='./ckpt/pretraining/model_epoch_27.ckpt')
 parser.add_argument('--arch', type=str, default='fasterrcnn_resnet50_fpn')
 
 parser.add_argument("--device_target", type=str, default="GPU",

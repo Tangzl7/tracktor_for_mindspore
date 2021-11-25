@@ -45,29 +45,25 @@ def main(tracktor, _config, _log):
         yaml.dump(_config, outfile, default_flow_style=False)
 
     dataset = Datasets(tracktor['dataset'])
-    obj_detect_models, dataset = get_weights(tracktor['obj_detect_weights'], dataset)
 
     ##########################
     # Initialize the modules #
     ##########################
     _log.info("Initializing object detector(s).")
 
-    obj_detects = []
-    for obj_detect_model in obj_detect_models:
-        obj_detect = FRCNN_FPN(config)
-        param_dict = load_checkpoint(obj_detect_model)
-        if tracktor['device_target'] == "GPU":
-            for key, value in param_dict.items():
-                tensor = value.asnumpy().astype(np.float32)
-                param_dict[key] = Parameter(tensor, key)
-        load_param_into_net(obj_detect, param_dict)
-        obj_detect.set_train(False)
-        obj_detects.append(obj_detect)
+    obj_detect = FRCNN_FPN(config)
+    param_dict = load_checkpoint(tracktor['obj_detect_weights'])
+    if tracktor['device_target'] == "GPU":
+        for key, value in param_dict.items():
+            tensor = value.asnumpy().astype(np.float32)
+            param_dict[key] = Parameter(tensor, key)
+    load_param_into_net(obj_detect, param_dict)
+    obj_detect.set_train(False)
 
     tracker = Tracker(obj_detect, tracker_cfg=tracktor['tracker'])
     time_total, num_frames, mot_accums = 0, 0, []
 
-    for seq, obj_detect in zip(dataset, obj_detects):
+    for seq in dataset:
         tracker.obj_detect = obj_detect
         tracker.reset()
 
@@ -107,5 +103,4 @@ def main(tracktor, _config, _log):
         evaluate_mot_accums(mot_accums,
                             [str(s) for s in dataset if not s.no_gt],
                             generate_overall=True)
-
 

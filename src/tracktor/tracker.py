@@ -117,6 +117,9 @@ class Tracker():
         for t in self.tracks:
             t.last_box = t.box.copy()
 
+        # img = Tensor(np.ones([1, 3, 768, 1280]), dtype=ms.float32)
+        # blob['img'] = img
+
         ###########################
         # Look for new detections #
         ###########################

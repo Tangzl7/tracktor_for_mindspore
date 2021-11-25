@@ -9,7 +9,7 @@ tracktor:
   device_target: GPU
 
   # frcnn
-  obj_detect_weights: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_1-48_332.ckpt
+  obj_detect_weights: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_3-15_2658.ckpt
 
   interpolate: False
   # compile video with: `ffmpeg -f image2 -framerate 15 -i %06d.jpg -vcodec libx264 -y movie.mp4 -vf scale=320:-1`
@@ -17,7 +17,7 @@ tracktor:
   # load tracking results if available and only evaluate
   load_results: False
   # dataset (look into tracker/datasets/factory.py)
-  dataset: mot17_05_FRCNN
+  dataset: mot17_train_FRCNN
   # [start percentage, end percentage], e.g., [0.0, 0.5] for train and [0.75, 1.0] for val split.
   frame_range:
     start: 0.0
