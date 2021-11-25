@@ -43,23 +43,25 @@ class MOTSequence:
         img[:, :, 0] = img_rgb[:, :, 2]
         img[:, :, 1] = img_rgb[:, :, 1]
         img[:, :, 2] = img_rgb[:, :, 0]
-        w_scale = self._width / img.shape[1]
-        h_scale = self._height / img.shape[0]
+        # w_scale = self._width / img.shape[1]
+        # h_scale = self._height / img.shape[0]
         img_shape = np.array((img.shape[0], img.shape[1]))
-        scale_factor_ = [self._height / img.shape[0], self._width / img.shape[1]]
+        scale_factor_ = min(max(self._height, self._width) / max(img.shape[0], img.shape[1]),
+                            min(self._height, self._width) / min(img.shape[0], img.shape[1]))
         scale_factor = np.array(
-            [w_scale, h_scale, w_scale, h_scale], dtype=np.float32)
-        img = cv2.resize(img, (self._width, self._height), interpolation=cv2.INTER_LINEAR)
-        img_shape = np.append(img_shape, (scale_factor_[0], scale_factor_[1]))
+            [scale_factor_, scale_factor_, scale_factor_, scale_factor_], dtype=np.float32)
+        img = cv2.resize(img, (int(img.shape[1]*scale_factor_), int(img.shape[0]*scale_factor_)), interpolation=cv2.INTER_LINEAR)
+        img_shape = np.append(img_shape, (scale_factor_, scale_factor_))
         img_shape = np.asarray(img_shape, dtype=np.float32)
 
         img = self.imnormalize_column(img)
         img = self.transpose_column(img)
+        img = self.expand_img(img)
 
         dets = np.array(data['dets'].copy())
         dets[:, :-1] = dets[:, :-1] * scale_factor
-        dets[:, 0::2] = np.clip(dets[:, 0::2], 0, self._width - 1)
-        dets[:, 1::2] = np.clip(dets[:, 1::2], 0, self._height - 1)
+        dets[:, 0::2] = np.clip(dets[:, 0::2], 0, int(img.shape[1]*scale_factor_)-1)
+        dets[:, 1::2] = np.clip(dets[:, 1::2], 0, int(img.shape[0]*scale_factor_)-1)
 
         sample = {}
         sample['img'] = np.expand_dims(img, axis=0)
@@ -90,6 +92,11 @@ class MOTSequence:
         img_data = img_data.astype(np.float32)
 
         return img_data
+
+    def expand_img(self, img):
+        expanded_img = np.zeros([3, self._height, self._width])
+        expanded_img[:img.shape[0], :img.shape[1], :img.shape[2]] = img.copy()
+        return expanded_img
 
     def _sequence(self):
         seq_name = self._seq_name

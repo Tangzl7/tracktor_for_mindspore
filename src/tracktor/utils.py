@@ -38,13 +38,13 @@ colors = [
 
 
 def resize_boxes(boxes, img_shape_original, img_shape_dst):
-    w_scale = img_shape_dst[1] / img_shape_original[1]
-    h_scale = img_shape_dst[0] / img_shape_original[0]
+    scale_factor_ = min(max(img_shape_dst[0], img_shape_dst[1]) / max(img_shape_original[0], img_shape_original[1]),
+                        min(img_shape_dst[0], img_shape_dst[1]) / min(img_shape_original[0], img_shape_original[1]))
     scale_factor = np.array(
-        [w_scale, h_scale, w_scale, h_scale], dtype=np.float32)
+        [scale_factor_, scale_factor_, scale_factor_, scale_factor_], dtype=np.float32)
     boxes[:, :-1] = boxes[:, :-1] * scale_factor
-    boxes[:, 0::2] = np.clip(boxes[:, 0::2], 0, img_shape_dst[1] - 1)
-    boxes[:, 1::2] = np.clip(boxes[:, 1::2], 0, img_shape_dst[0] - 1)
+    boxes[:, 0::2] = np.clip(boxes[:, 0::2], 0, int(img_shape_original[1]*scale_factor_) - 1)
+    boxes[:, 1::2] = np.clip(boxes[:, 1::2], 0, int(img_shape_original[0]*scale_factor_) - 1)
 
     return boxes
 
