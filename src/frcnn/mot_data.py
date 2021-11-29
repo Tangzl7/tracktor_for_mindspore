@@ -12,13 +12,14 @@ from mindspore import Tensor
 
 
 class MOTObjDetectDatasetGenerator:
-    def __init__(self, root, height=768, width=1280, split_seqs=None, vis_threshold=0.25):
+    def __init__(self, root, height=768, width=1280, split_seqs=None, vis_threshold=0.25, train=True):
         self.root = root
         self._height = height
         self._width = width
         self._vis_threshold = vis_threshold
         self._img_paths = []
         self._split_seqs = split_seqs
+        self._train = train
 
         # set self._img_paths
         for f in sorted(os.listdir(root)):
@@ -176,6 +177,16 @@ class MOTObjDetectDatasetGenerator:
         expanded_img[:img.shape[0], :img.shape[1], :img.shape[2]] = img.copy()
         return expanded_img
 
+    def flip(self, img, boxes):
+        if np.random.random() > 0.5:
+            return img, boxes
+        img = np.flip(img, axis=1)
+        flipped = boxes.copy()
+        _, _, w = img.shape
+        flipped[..., 0::4] = w - boxes[..., 2::4] - 1
+        flipped[..., 2::4] = w - boxes[..., 0::4] - 1
+        return img, flipped
+
     def __getitem__(self, idx):
         img_path = self._img_paths[idx]
         img_rgb = np.array(Image.open(img_path).convert("RGB"))
@@ -195,8 +206,8 @@ class MOTObjDetectDatasetGenerator:
 
         boxes, labels, valid_num, image_id = self._get_annotation(idx)
         boxes = boxes * scale_factor
-        boxes[:, 0::2] = np.clip(boxes[:, 0::2], 0, int(img.shape[1]*scale_factor_)-1)
-        boxes[:, 1::2] = np.clip(boxes[:, 1::2], 0, int(img.shape[0]*scale_factor_)-1)
+        boxes[:, 0::2] = np.clip(boxes[:, 0::2], 0, int(img_rgb.shape[1]*scale_factor_)-1)
+        boxes[:, 1::2] = np.clip(boxes[:, 1::2], 0, int(img_rgb.shape[0]*scale_factor_)-1)
 
         # img_shape = np.asarray((self._height, self._width, 1.0), dtype=np.float32)
         img_shape = np.append(img_shape, (scale_factor_, scale_factor_))
@@ -204,6 +215,8 @@ class MOTObjDetectDatasetGenerator:
 
         img = self.imnormalize_column(img)
         img = self.transpose_column(img)
+        if self._train:
+            img, boxes = self.flip(img, boxes)
         img = self.expand_img(img)
 
         return img, img_shape, boxes, labels, valid_num, image_id
@@ -405,19 +418,8 @@ def preprocess_fn(img, img_shape, boxes, labels, valid_num, image_id, flip_ratio
     labels = np.pad(labels, ((0, max_number - labels.shape[0])), mode="constant", constant_values=-1)
     valid_num = np.pad(valid_num, ((0, max_number - valid_num.shape[0])), mode="constant", constant_values=False)
 
-    """flip operation for image"""
-    if np.random.rand() > flip_ratio:
-        if flip_ratio == -1:
-            return img, img_shape, boxes, labels, valid_num, image_id
-        else:
-            return img, np.asarray((config.img_height, config.img_width, 1.0), dtype=np.float32), boxes, labels, valid_num
-    img_data = img
-    img_data = np.flip(img_data, axis=1)
-    flipped = boxes.copy()
-    _, _, w = img_data.shape
-
-    flipped[..., 0::4] = w - boxes[..., 2::4] - 1
-    flipped[..., 2::4] = w - boxes[..., 0::4] - 1
-
-    return img_data, np.asarray((config.img_height, config.img_width, 1.0), dtype=np.float32), flipped, labels, valid_num
+    if flip_ratio == -1:
+        return img, img_shape, boxes, labels, valid_num, image_id
+    else:
+        return img, np.asarray((config.img_height, config.img_width, 1.0), dtype=np.float32), boxes, labels, valid_num
 

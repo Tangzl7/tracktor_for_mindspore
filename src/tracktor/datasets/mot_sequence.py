@@ -60,8 +60,8 @@ class MOTSequence:
 
         dets = np.array(data['dets'].copy())
         dets[:, :-1] = dets[:, :-1] * scale_factor
-        dets[:, 0::2] = np.clip(dets[:, 0::2], 0, int(img.shape[1]*scale_factor_)-1)
-        dets[:, 1::2] = np.clip(dets[:, 1::2], 0, int(img.shape[0]*scale_factor_)-1)
+        dets[:, 0::2] = np.clip(dets[:, 0::2], 0, int(img_rgb.shape[1]*scale_factor_)-1)
+        dets[:, 1::2] = np.clip(dets[:, 1::2], 0, int(img_rgb.shape[0]*scale_factor_)-1)
 
         sample = {}
         sample['img'] = np.expand_dims(img, axis=0)
@@ -94,7 +94,7 @@ class MOTSequence:
         return img_data
 
     def expand_img(self, img):
-        expanded_img = np.zeros([3, self._height, self._width])
+        expanded_img = np.zeros([3, self._height, self._width], dtype=np.float32)
         expanded_img[:img.shape[0], :img.shape[1], :img.shape[2]] = img.copy()
         return expanded_img
 

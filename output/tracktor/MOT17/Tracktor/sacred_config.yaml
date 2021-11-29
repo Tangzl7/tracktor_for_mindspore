@@ -1,4 +1,4 @@
-seed: 201540953
+seed: 759624974
 tracktor:
   dataset: mot17_train_FRCNN
   desription: null
@@ -11,7 +11,7 @@ tracktor:
   module_name: MOT17
   name: Tracktor
   network: frcnn
-  obj_detect_weights: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_3-10_2658.ckpt
+  obj_detect_weights: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_1-30_2658.ckpt
   seed: 12345
   tracker:
     detection_nms_thresh: 0.3
