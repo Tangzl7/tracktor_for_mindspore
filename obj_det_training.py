@@ -24,7 +24,7 @@ from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, TimeMoni
 set_seed(1)
 parser = argparse.ArgumentParser()
 parser.add_argument('--train_mot_dir', default='MOT17Det')
-parser.add_argument('--pretraining', default='./output/faster_rcnn_fpn/pretraining/model_epoch_27.ckpt')
+parser.add_argument('--pretraining', default='./output/faster_rcnn_fpn/pretraining/fasterrcnn_resnet50_fpn_coco-258fb6c6.ckpt')
 
 parser.add_argument("--device_target", type=str, default="GPU",
                     help="device where the code will be implemented, default is Ascend")
