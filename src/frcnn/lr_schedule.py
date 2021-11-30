@@ -29,11 +29,9 @@ def dynamic_lr(config, steps_per_epoch):
     """dynamic learning rate generator"""
     base_lr = config.base_lr
     total_steps = steps_per_epoch * (config.epoch_size + 1)
-    # warmup_steps = int(config.warmup_step)
     lr = []
     for i in range(total_steps):
         lr.append((0.1 ** int(i / (steps_per_epoch * 10))) * base_lr)
-        # lr.append(base_lr)
 
     return lr
 

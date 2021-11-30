@@ -38,8 +38,7 @@ context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target, d
 
 def get_dataset():
     train_data_dir = osp.join(f'./data/{args.train_mot_dir}', 'train')
-    # train_split_seqs = ['MOT17-02', 'MOT17-04', 'MOT17-05', 'MOT17-09', 'MOT17-10', 'MOT17-11', 'MOT17-13']
-    train_split_seqs = ['MOT17-09']
+    train_split_seqs = ['MOT17-02', 'MOT17-04', 'MOT17-05', 'MOT17-09', 'MOT17-10', 'MOT17-11', 'MOT17-13']
     dataset_generator = MOTObjDetectDatasetGenerator(root=train_data_dir, split_seqs=train_split_seqs)
     dataset = ds.GeneratorDataset(dataset_generator, ['img', 'img_shape', 'boxes', 'labels', 'valid_num', 'image_id'], shuffle=True)
     preprocess_func = (lambda img, img_shape, boxes, labels, valid_num, image_id:

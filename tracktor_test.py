@@ -5,11 +5,9 @@ import tqdm
 import yaml
 import numpy as np
 import os.path as osp
-import motmetrics as mm
 from sacred import Experiment
 
 from src.frcnn.config import config
-from src.tracktor import data_handle
 from src.tracktor.tracker import Tracker
 from src.tracktor.frcnn_fpn import FRCNN_FPN
 from src.tracktor.reid import ResNet50_FC512
@@ -18,7 +16,6 @@ from src.tracktor.datasets.factory import Datasets
 from src.tracktor.utils import get_mot_accum, \
                     plot_sequence, evaluate_mot_accums
 
-import mindspore.dataset as ds
 from mindspore import Parameter, context
 from mindspore import load_checkpoint, load_param_into_net
 

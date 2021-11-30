@@ -4,12 +4,11 @@ from collections import deque
 from scipy.optimize import linear_sum_assignment
 
 from src.tracktor.utils import clip_boxes, resize_boxes, \
-                        warp_pos, euclidean_squared_distance
+    warp_pos, euclidean_squared_distance
 
 import mindspore as ms
 from mindspore import Tensor
 import mindspore.ops as ops
-from sklearn.metrics import pairwise_distances
 
 
 class Tracker():
@@ -55,6 +54,7 @@ class Tracker():
             self.im_index = 0
 
     """remove some tracks"""
+
     def tracks_to_inactive(self, tracks):
         self.tracks = [t for t in self.tracks if t not in tracks]
         for t in tracks:
@@ -62,6 +62,7 @@ class Tracker():
         self.inactive_tracks += tracks
 
     """initializes new track objects and saves them"""
+
     def add(self, new_det_box, new_det_features):
         num_new = len(new_det_box)
         for i in range(num_new):
@@ -76,6 +77,7 @@ class Tracker():
         self.track_num += num_new
 
     """regress the position of the tracks and also checks their scores"""
+
     def regress_tracks(self, blob):
         boxes_in = self.get_box()  # get the track's pos
         boxes_in = resize_boxes(boxes_in, blob['img_shape'][0][:2], blob['img'].shape[-2:])
@@ -92,6 +94,7 @@ class Tracker():
                 t.box[0] = boxes[i]
 
     """get the positions of all active tracks"""
+
     def get_box(self):
         if len(self.tracks) == 1:
             box = self.tracks[0].box
@@ -102,6 +105,7 @@ class Tracker():
         return box
 
     """Get the features of all active tracks."""
+
     def get_features(self):
         if len(self.tracks) == 1:
             features = self.tracks[0].features
@@ -112,11 +116,13 @@ class Tracker():
         return features
 
     """Adds new appearance features to active tracks."""
+
     def add_features(self, new_features):
         for t, f in zip(self.tracks, new_features):
             t.add_features(f.reshape((1, -1)))
 
     """Aligns the positions of active and inactive tracks depending on camera motion."""
+
     def align(self, blob):
         if self.im_index > 0:
             im1 = np.transpose(self.last_image, (1, 2, 0))
@@ -124,7 +130,8 @@ class Tracker():
             im1_gray = cv2.cvtColor(im1, cv2.COLOR_RGB2GRAY)
             im2_gray = cv2.cvtColor(im2, cv2.COLOR_RGB2GRAY)
             warp_matrix = np.eye(2, 3, dtype=np.float32)
-            criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, self.number_of_iterations, self.termination_eps)
+            criteria = (
+            cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, self.number_of_iterations, self.termination_eps)
             cc, warp_matrix = cv2.findTransformECC(im1_gray, im2_gray, warp_matrix, self.warp_mode, criteria)
 
             for t in self.tracks:
@@ -140,6 +147,7 @@ class Tracker():
                         t.last_box[i][:, :-1] = warp_pos(t.last_box[i][:, :-1], warp_matrix)
 
     """Get the features of all inactive tracks."""
+
     def get_inactive_features(self):
         if len(self.inactive_tracks) == 1:
             features = self.inactive_tracks[0].features
@@ -150,6 +158,7 @@ class Tracker():
         return features
 
     """Tries to ReID inactive tracks with new detections."""
+
     def reid(self, blob, new_det_boxes):
         new_det_features = [np.array([]) for _ in range(len(new_det_boxes))]
 
@@ -197,8 +206,8 @@ class Tracker():
 
         return new_det_boxes, new_det_features
 
-
     """Uses the siamese CNN to get the features for all active tracks."""
+
     def get_appearances(self, blob, boxes):
         crops = []
         boxes = resize_boxes(boxes, blob['img_shape'][0][:2], blob['img'].shape[-2:])
@@ -223,6 +232,7 @@ class Tracker():
         return new_features.asnumpy()
 
     """check if inactive tracks should be removed"""
+
     def clear_inactive(self):
         to_remove = []
         for t in self.inactive_tracks:
@@ -372,12 +382,14 @@ class Track(object):
             return False
 
     """add new appearance features to the object"""
+
     def add_features(self, features):
         self.features.append(features)
         if len(self.features) > self.max_features_num:
             self.features.popleft()
 
     """compares test_features to features of this track object"""
+
     def test_features(self, test_features):
         if len(self.features) > 1:
             features = np.concatenate(list(self.features), axis=0)

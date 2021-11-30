@@ -112,14 +112,14 @@ config = ed({
     "rpn_head_weight": 1.0,
 
     # LR
-    "base_lr": 0.02,
+    "base_lr": 0.001,
     "warmup_step": 500,
     "warmup_ratio": 1/16.0,
     "sgd_step": [8, 11],
     "sgd_momentum": 0.9,
 
     # train
-    "batch_size": 16,
+    "batch_size": 2,
     "loss_scale": 256,
     "momentum": 0.9,
     "weight_decay": 0.0005,
