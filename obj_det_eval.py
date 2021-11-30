@@ -18,12 +18,7 @@ from mindspore.train.serialization import load_checkpoint, load_param_into_net
 set_seed(1)
 parser = argparse.ArgumentParser()
 parser.add_argument('--test_mot_dir', default='MOT17Det')
-parser.add_argument('--lr_drop', type=int, default=20)
-parser.add_argument('--batch_size', type=int, default=1)
-parser.add_argument('--train_vis_threshold', type=float, default=0.25)
-parser.add_argument('--test_vis_threshold', type=float, default=0.25)
 parser.add_argument('--pretraining', default='./ckpt/pretraining/model_epoch_27.ckpt')
-parser.add_argument('--arch', type=str, default='fasterrcnn_resnet50_fpn')
 
 parser.add_argument("--device_target", type=str, default="GPU",
                     help="device where the code will be implemented, default is Ascend")
@@ -45,7 +40,7 @@ def get_dataset():
                     preprocess_fn(img, img_shape, boxes, labels, valid_num, image_id, -1))
     dataset = dataset.map(input_columns=['img', 'img_shape', 'boxes', 'labels', 'valid_num', 'image_id'],
                         operations=preprocess_func)
-    dataset = dataset.batch(batch_size=args.batch_size, drop_remainder=True)
+    dataset = dataset.batch(batch_size=config.test_batch_size, drop_remainder=True)
     return dataset_generator, dataset
 
 
@@ -97,7 +92,7 @@ def evaluate_and_write_result_files(model, dataset, generator):
         all_label = output[1]
         all_mask = output[2]
 
-        for j in range(args.batch_size):
+        for j in range(config.test_batch_size):
             all_bbox_squee = np.squeeze(all_bbox.asnumpy()[j, :, :])
             all_label_squee = np.squeeze(all_label.asnumpy()[j, :, :])
             all_mask_squee = np.squeeze(all_mask.asnumpy()[j, :, :])

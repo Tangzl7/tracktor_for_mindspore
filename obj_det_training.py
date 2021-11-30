@@ -24,12 +24,7 @@ from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, TimeMoni
 set_seed(1)
 parser = argparse.ArgumentParser()
 parser.add_argument('--train_mot_dir', default='MOT17Det')
-parser.add_argument('--num_epochs', type=int, default=30)
-parser.add_argument('--lr_drop', type=int, default=20)
-parser.add_argument('--batch_size', type=int, default=16)
-parser.add_argument('--train_vis_threshold', type=float, default=0.25)
-parser.add_argument('--test_vis_threshold', type=float, default=0.25)
-parser.add_argument('--pretraining', default='./ckpt/pretraining/faster_rcnn-12_7393.ckpt')
+parser.add_argument('--pretraining', default='./output/faster_rcnn_fpn/pretraining/model_epoch_27.ckpt')
 
 parser.add_argument("--device_target", type=str, default="GPU",
                     help="device where the code will be implemented, default is Ascend")
@@ -53,7 +48,7 @@ def get_dataset():
                         output_columns=['img', 'img_shape', 'boxes', 'labels', 'valid_num'],
                         column_order=['img', 'img_shape', 'boxes', 'labels', 'valid_num'],
                         operations=preprocess_func)
-    dataset = dataset.batch(batch_size=args.batch_size, drop_remainder=True)
+    dataset = dataset.batch(batch_size=config.batch_size, drop_remainder=True)
     return dataset_generator, dataset
 
 
@@ -83,16 +78,8 @@ def train(model, dataset):
         for item in list(param_dict.keys()):
             if item in ("global_step", "learning_rate") or "rcnn" in item:
                 param_dict.pop(item)
-        # load_param_into_net(opt, param_dict)
         load_param_into_net(model, param_dict)
         print("load model success...")
-
-    # param_dict = load_checkpoint(args.pretraining)
-    # if args.device_target == "GPU":
-    #     for key, value in param_dict.items():
-    #         tensor = value.asnumpy().astype(np.float32)
-    #         param_dict[key] = Parameter(tensor, key)
-    # load_param_into_net(model, param_dict)
 
     model_with_loss = WithLossCell(model, loss)
     model = TrainOneStepCell(model_with_loss, opt, sens=config.loss_scale)

@@ -127,7 +127,7 @@ config = ed({
     "save_checkpoint": True,
     "save_checkpoint_epochs": 1,
     "keep_checkpoint_max": 15,
-    "save_checkpoint_path": "./ckpt",
+    "save_checkpoint_path": "./output",
 
     # Number of threads used to process the dataset in parallel
     "num_parallel_workers": 8,
