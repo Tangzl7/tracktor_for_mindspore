@@ -9,13 +9,16 @@ tracktor:
   device_target: GPU
 
   # frcnn
-  obj_detect_weights: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_1-30_2658.ckpt
+  obj_detect_weight: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_1-30_2658.ckpt
+
+  # reid
+  reid_weight: output/tracktor/MOT17/reid/reid.ckpt
 
   interpolate: False
   # compile video with: `ffmpeg -f image2 -framerate 15 -i %06d.jpg -vcodec libx264 -y movie.mp4 -vf scale=320:-1`
   write_images: False
   # load tracking results if available and only evaluate
-  load_results: False
+  load_results: True
   # dataset (look into tracker/datasets/factory.py)
   dataset: mot17_train_FRCNN
   # [start percentage, end percentage], e.g., [0.0, 0.5] for train and [0.75, 1.0] for val split.
@@ -33,14 +36,18 @@ tracktor:
     # NMS theshold while tracking
     regression_nms_thresh: 0.6
     # use a constant velocity assumption v_t = x_t - x_t-1
-    motion_model: False
-    # DPM or DPM_RAW or 0, raw includes the unfiltered (no nms) versions of the provided detections,
+    motion_model:
+      enabled: False
+      # average velocity over last n_steps steps
+      n_steps: 5
+      # if true, only model the movement of the bounding box center. If false, width and height are also modeled.
+      center_only: False
     # 0 tells the tracker to use private detections (Faster R-CNN)
     public_detections: True
     # How much last appearance features are to keep
     max_features_num: 10
     # Do camera motion compensation
-    do_align: False
+    do_align: True
     # Which warp mode to use (cv2.MOTION_EUCLIDEAN, cv2.MOTION_AFFINE, ...)
     warp_mode: cv2.MOTION_EUCLIDEAN
     # maximal number of iterations (original 50)
@@ -48,10 +55,10 @@ tracktor:
     # Threshold increment between two iterations (original 0.001)
     termination_eps: 0.00001
     # Use siamese network to do reid
-    do_reid: False
+    do_reid: True
     # How much timesteps dead tracks are kept and cosidered for reid
-    inactive_patience: 10
+    inactive_patience: 50
     # How similar do image and old track need to be to be considered the same person
     reid_sim_threshold: 200.0
     # How much IoU do track and image need to be considered for matching
-    reid_iou_threshold: 0.2
+    reid_iou_threshold: 0.0

@@ -1,4 +1,4 @@
-seed: 759624974
+seed: 106044467
 tracktor:
   dataset: mot17_train_FRCNN
   desription: null
@@ -7,25 +7,29 @@ tracktor:
     end: 1.0
     start: 0.0
   interpolate: false
-  load_results: false
+  load_results: true
   module_name: MOT17
   name: Tracktor
   network: frcnn
-  obj_detect_weights: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_1-30_2658.ckpt
+  obj_detect_weight: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_1-30_2658.ckpt
+  reid_weight: output/tracktor/MOT17/reid/reid.ckpt
   seed: 12345
   tracker:
     detection_nms_thresh: 0.3
     detection_person_thresh: 0.5
-    do_align: false
-    do_reid: false
-    inactive_patience: 10
+    do_align: true
+    do_reid: true
+    inactive_patience: 50
     max_features_num: 10
-    motion_model: false
+    motion_model:
+      center_only: false
+      enabled: false
+      n_steps: 5
     number_of_iterations: 100
     public_detections: true
     regression_nms_thresh: 0.6
     regression_person_thresh: 0.5
-    reid_iou_threshold: 0.2
+    reid_iou_threshold: 0.0
     reid_sim_threshold: 200.0
     termination_eps: 1.0e-05
     warp_mode: cv2.MOTION_EUCLIDEAN

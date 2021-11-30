@@ -12,6 +12,7 @@ from src.frcnn.config import config
 from src.tracktor import data_handle
 from src.tracktor.tracker import Tracker
 from src.tracktor.frcnn_fpn import FRCNN_FPN
+from src.tracktor.reid import ResNet50_FC512
 from src.tracktor.config import get_output_dir
 from src.tracktor.datasets.factory import Datasets
 from src.tracktor.utils import get_mot_accum, \
@@ -49,10 +50,10 @@ def main(tracktor, _config, _log):
     ##########################
     # Initialize the modules #
     ##########################
-    _log.info("Initializing object detector(s).")
 
+    _log.info("Initializing object detector(s).")
     obj_detect = FRCNN_FPN(config)
-    param_dict = load_checkpoint(tracktor['obj_detect_weights'])
+    param_dict = load_checkpoint(tracktor['obj_detect_weight'])
     if tracktor['device_target'] == "GPU":
         for key, value in param_dict.items():
             tensor = value.asnumpy().astype(np.float32)
@@ -60,7 +61,17 @@ def main(tracktor, _config, _log):
     load_param_into_net(obj_detect, param_dict)
     obj_detect.set_train(False)
 
-    tracker = Tracker(obj_detect, tracker_cfg=tracktor['tracker'])
+    _log.info("Initializing reid.")
+    reid = ResNet50_FC512()
+    param_dict_reid = load_checkpoint(tracktor['reid_weight'])
+    if tracktor['device_target'] == "GPU":
+        for key, value in param_dict_reid.items():
+            tensor = value.asnumpy().astype(np.float32)
+            param_dict_reid[key] = Parameter(tensor, key)
+    load_param_into_net(reid, param_dict_reid)
+    reid.set_train(False)
+
+    tracker = Tracker(obj_detect, reid, tracker_cfg=tracktor['tracker'])
     time_total, num_frames, mot_accums = 0, 0, []
 
     for seq in dataset:

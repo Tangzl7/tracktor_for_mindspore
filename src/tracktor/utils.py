@@ -42,11 +42,12 @@ def resize_boxes(boxes, img_shape_original, img_shape_dst):
                         min(img_shape_dst[0], img_shape_dst[1]) / min(img_shape_original[0], img_shape_original[1]))
     scale_factor = np.array(
         [scale_factor_, scale_factor_, scale_factor_, scale_factor_], dtype=np.float32)
-    boxes[:, :-1] = boxes[:, :-1] * scale_factor
-    boxes[:, 0::2] = np.clip(boxes[:, 0::2], 0, int(img_shape_original[1]*scale_factor_) - 1)
-    boxes[:, 1::2] = np.clip(boxes[:, 1::2], 0, int(img_shape_original[0]*scale_factor_) - 1)
+    resized_boxes = boxes.copy()
+    resized_boxes[:, :-1] = resized_boxes[:, :-1] * scale_factor
+    resized_boxes[:, 0::2] = np.clip(resized_boxes[:, 0::2], 0, int(img_shape_original[1]*scale_factor_) - 1)
+    resized_boxes[:, 1::2] = np.clip(resized_boxes[:, 1::2], 0, int(img_shape_original[0]*scale_factor_) - 1)
 
-    return boxes
+    return resized_boxes
 
 def clip_boxes(boxes, size):
     """
@@ -110,6 +111,23 @@ def get_mot_accum(results, seq_loader):
             distance)
 
     return mot_accum
+
+
+def warp_pos(pos, warp_matrix):
+    p1 = np.array([pos[0, 0], pos[0, 1], 1]).reshape((3, 1))
+    p2 = np.array([pos[0, 2], pos[0, 3], 1]).reshape((3, 1))
+    p1_n = np.dot(warp_matrix, p1).reshape((1, 2))
+    p2_n = np.dot(warp_matrix, p2).reshape((1, 2))
+    return np.concatenate((p1_n, p2_n), axis=1).reshape((1, -1))
+
+
+def euclidean_squared_distance(input1, input2):
+    m, n = len(input1), len(input2)
+    mat1 = np.power(input1, 2).sum(axis=1, keepdims=True).reshape((m, n))
+    mat2 = np.power(input2, 2).sum(axis=1, keepdims=True).reshape((n, m))
+    distmat = mat1 + mat2
+    distmat = 1 * distmat - 2 * np.dot(input1, input2.T)
+    return distmat
 
 
 def evaluate_mot_accums(accums, names, generate_overall=False):
