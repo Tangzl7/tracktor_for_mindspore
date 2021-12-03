@@ -31,21 +31,19 @@ def dynamic_lr(config, steps_per_epoch):
     total_steps = steps_per_epoch * (config.epoch_size + 1)
     lr = []
     for i in range(total_steps):
+        if i < min(1000, steps_per_epoch):
+            alpha = float(i) / config.warmup_step
+            lr.append(base_lr * (config.warmup_ratio * (1 - alpha) + alpha))
+        else:
+            lr.append((0.1 ** int(i / (steps_per_epoch * 20))) * base_lr)
+    return lr
+
+def dynamic_lr_1(config, steps_per_epoch):
+    """dynamic learning rate generator"""
+    base_lr = config.base_lr
+    total_steps = steps_per_epoch * (config.epoch_size + 1)
+    lr = []
+    for i in range(total_steps):
         lr.append((0.1 ** int(i / (steps_per_epoch * 10))) * base_lr)
 
     return lr
-
-
-# def dynamic_lr(config, steps_per_epoch):
-#     """dynamic learning rate generator"""
-#     base_lr = config.base_lr
-#     total_steps = steps_per_epoch * (config.epoch_size + 1)
-#     warmup_steps = int(config.warmup_step)
-#     lr = []
-#     for i in range(total_steps):
-#         if i < warmup_steps:
-#             lr.append(linear_warmup_learning_rate(i, warmup_steps, base_lr, base_lr * config.warmup_ratio))
-#         else:
-#             lr.append(a_cosine_learning_rate(i, base_lr, warmup_steps, total_steps))
-#
-#     return lr

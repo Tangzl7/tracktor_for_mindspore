@@ -154,6 +154,7 @@ class ResNet50_FC512(nn.Cell):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilate=replace_stride_with_dilation[2])
         self.avgpool = P.AdaptiveAvgPool2D((1, 1))
+        self.mean = P.ReduceMean(keep_dims=True)
         self.fc = nn.SequentialCell([
                 nn.Dense(512 * block.expansion, 512, has_bias=True),
                 nn.BatchNorm1d(512),
@@ -214,7 +215,7 @@ class ResNet50_FC512(nn.Cell):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        x = self.avgpool(x)
+        x = self.mean(x, (2, 3))
         x = self.flatten(x)
 
         if not self.training:

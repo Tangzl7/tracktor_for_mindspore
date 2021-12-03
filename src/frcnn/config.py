@@ -112,15 +112,15 @@ config = ed({
     "rpn_head_weight": 1.0,
 
     # LR
-    "base_lr": 0.001,
-    "warmup_step": 500,
-    "warmup_ratio": 1/16.0,
+    "base_lr": 0.01,
+    "warmup_step": 1000,
+    "warmup_ratio": 1/1000,
     "sgd_step": [8, 11],
     "sgd_momentum": 0.9,
 
     # train
-    "batch_size": 2,
-    "loss_scale": 256,
+    "batch_size": 4,
+    "loss_scale": 1024,
     "momentum": 0.9,
     "weight_decay": 0.0005,
     "epoch_size": 30,
@@ -130,8 +130,11 @@ config = ed({
     "save_checkpoint_path": "./output",
 
     # Number of threads used to process the dataset in parallel
-    "num_parallel_workers": 8,
+    "num_parallel_workers": 4,
     # Parallelize Python operations with multiple worker processes
-    "python_multiprocessing": False,
-    "num_classes": 2
+    "run_distribute": True,
+    "num_classes": 2,
+
+    "device_target": "Ascend",
+    "enable_modelarts": False
 })
