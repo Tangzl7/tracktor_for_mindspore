@@ -14,9 +14,9 @@
 # limitations under the License.
 # ============================================================================
 
-if [ $# -le 3 ]
+if [ $# -le 1 ]
 then
-    echo "Usage: sh run_distribute_train_ascend.sh [PRETRAINED_PATH] [TRAIN_DATA] [RANK_TABLE_FILE] (option)"
+    echo "Usage: sh run_standalone_train_ascend.sh [PRETRAINED_PATH] [TRAIN_DATA] (option)"
 exit 1
 fi
 
@@ -29,11 +29,9 @@ get_real_path(){
 }
 
 PATH1=$(get_real_path $1)
-PATH2=$(get_real_path $2)
-PATH3=$(get_real_path $3)
+PATH2=$(get_real_path $3)
 echo $PATH1
 echo $PATH2
-echo $PATH3
 
 if [ ! -f $PATH1 ]
 then
@@ -41,35 +39,31 @@ then
 exit 1
 fi
 
-if [ ! -f $PATH2 ]
+if [ ! -d $PATH2 ]
 then
     echo "error: TRAIN_DATA=$PATH2 is not a dir"
 exit 1
 fi
 
-if [ ! -d $PATH3 ]
-then
-    echo "error: RANK_TABLE_FILE=$PATH3 is not a file"
-fi
 
 ulimit -u unlimited
-export HCCL_CONNECT_TIMEOUT=600
-export DEVICE_NUM=8
-export RANK_SIZE=8
+export DEVICE_NUM=1
+export DEVICE_ID=0
+export RANK_ID=0
+export RANK_SIZE=1
 
-for((i=0; i<${DEVICE_NUM}; i++))
-do
-    export DEVICE_ID=$i
-    export RANK_ID=$i
-    rm -rf ./train_parallel$i
-    mkdir ./train_parallel$i
-    cp ../*.py ./train_parallel$i
-    cp *.sh ./train_parallel$i
-    cp -r ../src ./train_parallel$i
-    cd ./train_parallel$i || exit
-    echo "start training for rank $RANK_ID, device $DEVICE_ID"
-    env > env.log
-    python obj_det_training.py --device_id=$i --rank_id=$i --device_num=$DEVICE_NUM \
-     --train_data=$PATH2 --pre_trained=$PATH1 --device_target="Ascend" &> log &
-    cd ..
-done
+if [ -d "obj_det_training" ];
+then
+    rm -rf ./obj_det_training
+fi
+mkdir ./obj_det_training
+cp ../*.py ./obj_det_training
+cp ../*.yaml ./obj_det_training
+cp *.sh ./obj_det_training
+cp -r ../src ./obj_det_training
+cd ./obj_det_training || exit
+echo "start training for device $DEVICE_ID"
+env > env.log
+python obj_det_training.py --train_data=$PATH2 --device_id=$DEVICE_ID --pre_trained=$PATH1 \
+ --device_target="Ascend" &> log &
+cd ..

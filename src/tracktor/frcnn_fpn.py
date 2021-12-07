@@ -1,13 +1,10 @@
-import mindspore
 import numpy as np
 
 import mindspore as ms
 from mindspore.common.tensor import Tensor
 import mindspore.common.dtype as mstype
-from mindspore.ops import functional as F
-import mindspore.ops as ops
 
-from src.frcnn.config import config
+from src.frcnn.model_utils.config import config
 from src.frcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
 
 

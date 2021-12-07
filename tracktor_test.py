@@ -1,13 +1,12 @@
 import os
 import time
-import cv2
 import tqdm
 import yaml
 import numpy as np
 import os.path as osp
 from sacred import Experiment
 
-from src.frcnn.config import config
+from src.frcnn.model_utils.config import config
 from src.tracktor.tracker import Tracker
 from src.tracktor.reid import ResNet50_FC512
 from src.tracktor.config import get_output_dir

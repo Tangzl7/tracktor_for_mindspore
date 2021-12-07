@@ -15,7 +15,7 @@
 
 """Device adapter for ModelArts"""
 
-from src.frcnn.config import config
+from src.frcnn.model_utils.config import config
 
 if config.enable_modelarts:
     from src.frcnn.model_utils.moxing_adapter import get_device_id, get_device_num, get_rank_id, get_job_id

@@ -6,7 +6,7 @@ import configparser
 import os.path as osp
 from PIL import Image
 
-from src.frcnn.config import config
+from src.frcnn.model_utils.config import config
 
 from mindspore import Tensor
 

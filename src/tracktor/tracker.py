@@ -3,7 +3,7 @@ import numpy as np
 from collections import deque
 from scipy.optimize import linear_sum_assignment
 
-from src.frcnn.config import config
+from src.frcnn.model_utils.config import config
 from src.tracktor.utils import clip_boxes, resize_boxes, \
     warp_pos, euclidean_squared_distance
 
