@@ -16,6 +16,7 @@ from src.tracktor.utils import get_mot_accum, \
                     plot_sequence, evaluate_mot_accums
 from src.tracktor.frcnn_fpn import FRCNN_FPN, FRCNN_FPN_Fea
 
+import mindspore.common.dtype as mstype
 from mindspore import Parameter, context
 from mindspore import load_checkpoint, load_param_into_net
 
@@ -43,6 +44,7 @@ def main(tracktor, _config, _log):
         yaml.dump(_config, outfile, default_flow_style=False)
 
     dataset = Datasets(tracktor['dataset'])
+    device_type = "Ascend" if context.get_context("device_target") == "Ascend" else "Others"
 
     ##########################
     # Initialize the modules #
@@ -70,6 +72,12 @@ def main(tracktor, _config, _log):
             param_dict_reid[key] = Parameter(tensor, key)
     load_param_into_net(reid, param_dict_reid)
     reid.set_train(False)
+
+    if device_type == "Ascend":
+        print('device type: ascend')
+        obj_detect.to_float(mstype.float16)
+        obj_detect_fea.to_float(mstype.float16)
+        reid.to_float(mstype.float16)
 
     tracker = Tracker(obj_detect, obj_detect_fea, reid, tracker_cfg=tracktor['tracker'])
     time_total, num_frames, mot_accums = 0, 0, []
