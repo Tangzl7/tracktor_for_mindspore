@@ -9,12 +9,12 @@ from sacred import Experiment
 
 from src.frcnn.config import config
 from src.tracktor.tracker import Tracker
-from src.tracktor.frcnn_fpn import FRCNN_FPN
 from src.tracktor.reid import ResNet50_FC512
 from src.tracktor.config import get_output_dir
 from src.tracktor.datasets.factory import Datasets
 from src.tracktor.utils import get_mot_accum, \
                     plot_sequence, evaluate_mot_accums
+from src.tracktor.frcnn_fpn import FRCNN_FPN, FRCNN_FPN_Fea
 
 from mindspore import Parameter, context
 from mindspore import load_checkpoint, load_param_into_net
@@ -50,13 +50,16 @@ def main(tracktor, _config, _log):
 
     _log.info("Initializing object detector(s).")
     obj_detect = FRCNN_FPN(config)
+    obj_detect_fea = FRCNN_FPN_Fea(config)
     param_dict = load_checkpoint(tracktor['obj_detect_weight'])
     if tracktor['device_target'] == "GPU":
         for key, value in param_dict.items():
             tensor = value.asnumpy().astype(np.float32)
             param_dict[key] = Parameter(tensor, key)
     load_param_into_net(obj_detect, param_dict)
+    load_param_into_net(obj_detect_fea, param_dict)
     obj_detect.set_train(False)
+    obj_detect_fea.set_train(False)
 
     _log.info("Initializing reid.")
     reid = ResNet50_FC512()
@@ -68,7 +71,7 @@ def main(tracktor, _config, _log):
     load_param_into_net(reid, param_dict_reid)
     reid.set_train(False)
 
-    tracker = Tracker(obj_detect, reid, tracker_cfg=tracktor['tracker'])
+    tracker = Tracker(obj_detect, obj_detect_fea, reid, tracker_cfg=tracktor['tracker'])
     time_total, num_frames, mot_accums = 0, 0, []
 
     for seq in dataset:

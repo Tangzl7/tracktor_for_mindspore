@@ -15,13 +15,6 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 
 	def __init__(self, config):
 		super(FRCNN_FPN, self).__init__(config)
-		self.config = config
-		self.original_image_sizes = None
-		self.preprocessed_images = None
-		self.features = None
-		self.ones = ops.Ones()
-		self.zeros = ops.Zeros()
-		self.concat_3 = ops.Concat()
 
 	def detect(self, img_data, img_metas):
 		if isinstance(img_data, np.ndarray):
@@ -43,17 +36,7 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 
 		return np.array(result_boxes), np.array(result_cls)
 
-	def predict_boxes(self, boxes):
-		# proposal: tuple: batch, 1000, 5
-		# proposal_mask: tuple: batch, 1000, 5
-		proposal, proposal_mask = (), ()
-		for i in range(len(boxes)):
-			boxes_false = self.zeros((self.config.rpn_max_num - len(boxes[i]), 5), mindspore.float32)
-			proposal = proposal + (self.concat_3((boxes[i], boxes_false)), )
-			masks_true = self.ones((len(boxes[i])), mstype.bool_)
-			masks_false = self.zeros((self.config.rpn_max_num - len(boxes[i])), mstype.bool_)
-			proposal_mask = proposal_mask + (self.concat_3((masks_true, masks_false)), )
-
+	def construct(self, proposal, proposal_mask, img_metas, features):
 		bboxes_tuple = ()
 		mask_tuple = ()
 		# mask_tuple: tuple: batch, (1000, )
@@ -73,18 +56,16 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 		rois = self.concat_1((self.roi_align_index_test_tensor, bboxes_all))
 		# rois: (batch*1000, 5)
 		rois = self.cast(rois, mstype.float32)
-		rois = F.stop_gradient(rois)
 		# roi_feats: nums*256*7*7
 
 		roi_feats = self.roi_align_test(rois,
-										self.cast(self.features[0], mstype.float32),
-										self.cast(self.features[1], mstype.float32),
-										self.cast(self.features[2], mstype.float32),
-										self.cast(self.features[3], mstype.float32))
+										self.cast(features[0], mstype.float32),
+										self.cast(features[1], mstype.float32),
+										self.cast(features[2], mstype.float32),
+										self.cast(features[3], mstype.float32))
 
 		roi_feats = self.cast(roi_feats, self.ms_type)
 		rcnn_masks = self.concat(mask_tuple)
-		rcnn_masks = F.stop_gradient(rcnn_masks)
 		rcnn_mask_squeeze = self.squeeze(self.cast(rcnn_masks, mstype.bool_))
 		# rcnn_cls_loss: cls layer result, (nums, 81)  rcnn_reg_loss: reg layer result, (nums, 81*4)
 		rcnn_loss, rcnn_cls_loss, rcnn_reg_loss, _ = self.rcnn(roi_feats,
@@ -92,23 +73,20 @@ class FRCNN_FPN(Faster_Rcnn_Resnet50):
 															   rcnn_labels,
 															   rcnn_mask_squeeze)
 
-		output = self.get_det_bboxes(rcnn_cls_loss, rcnn_reg_loss, rcnn_masks, bboxes_all, self.img_metas, True)
+		output = self.get_det_bboxes(rcnn_cls_loss, rcnn_reg_loss, rcnn_masks, bboxes_all, img_metas, True)
 
-		pred_boxes, pred_cls, pred_mask = output[0][1].asnumpy(), output[1].asnumpy(), output[2].asnumpy().astype(bool)
-		pred_boxes, pred_cls = pred_boxes[pred_mask, :], pred_cls[pred_mask, 1]
+		return output[0][1], output[1], output[2]
 
-		return pred_boxes, pred_cls
 
-	def load_image(self, img_data, img_metas):
-		if isinstance(img_data, np.ndarray):
-			img_data = Tensor(img_data)
-		if isinstance(img_metas, np.ndarray):
-			img_metas = Tensor(img_metas)
+class FRCNN_FPN_Fea(Faster_Rcnn_Resnet50):
+	def __init__(self, config):
+		super(FRCNN_FPN_Fea, self).__init__(config)
 
-		self.img_metas = img_metas
-		self.preprocessed_image = img_data
-		self.features = self.backbone(img_data)
-		self.features = self.fpn_ncek(self.features)
+	def construct(self, img_data):
+		features = self.backbone(img_data)
+		features = self.fpn_ncek(features)
+		return features
+
 
 if __name__ == '__main__':
 	frcnn = FRCNN_FPN(config)

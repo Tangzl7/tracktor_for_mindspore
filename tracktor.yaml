@@ -9,7 +9,7 @@ tracktor:
   device_target: GPU
 
   # frcnn
-  obj_detect_weight: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_58_4.ckpt
+  obj_detect_weight: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn-25_332.ckpt
 
   # reid
   reid_weight: output/tracktor/MOT17/reid/reid.ckpt

@@ -3,20 +3,23 @@ import numpy as np
 from collections import deque
 from scipy.optimize import linear_sum_assignment
 
+from src.frcnn.config import config
 from src.tracktor.utils import clip_boxes, resize_boxes, \
     warp_pos, euclidean_squared_distance
 
 import mindspore as ms
-from mindspore import Tensor
 import mindspore.ops as ops
+from mindspore import Tensor
+import mindspore.common.dtype as mstype
 
 
 class Tracker():
     # only track pedestrian
     cl = 1
 
-    def __init__(self, obj_detect, reid_network, tracker_cfg):
+    def __init__(self, obj_detect, obj_detect_fea, reid_network, tracker_cfg):
         self.obj_detect = obj_detect  # object detector
+        self.obj_detect_fea = obj_detect_fea
         self.reid_network = reid_network
         self.detection_person_thresh = tracker_cfg['detection_person_thresh']
         self.regression_person_thresh = tracker_cfg['regression_person_thresh']
@@ -41,6 +44,9 @@ class Tracker():
         self.im_index = 0
         self.results = {}
 
+        self.ones = ops.Ones()
+        self.zeros = ops.Zeros()
+        self.concat = ops.Concat()
         self.det_nms = ops.NMSWithMask(self.detection_nms_thresh)
         self.reg_nms = ops.NMSWithMask(self.regression_nms_thresh)
 
@@ -52,6 +58,19 @@ class Tracker():
             self.track_num = 0  # track_id
             self.results = {}
             self.im_index = 0
+
+    """init boxes"""
+    def init_proposal(self, boxes):
+        # proposal: tuple: batch, 1000, 5
+        # proposal_mask: tuple: batch, 1000, 5
+        proposal, proposal_mask = (), ()
+        for i in range(len(boxes)):
+            boxes_false = self.zeros((config.rpn_max_num - len(boxes[i]), 5), ms.float32)
+            proposal = proposal + (self.concat((boxes[i], boxes_false)),)
+            masks_true = self.ones((len(boxes[i])), mstype.bool_)
+            masks_false = self.zeros((config.rpn_max_num - len(boxes[i])), mstype.bool_)
+            proposal_mask = proposal_mask + (self.concat((masks_true, masks_false)),)
+        return proposal, proposal_mask
 
     """remove some tracks"""
 
@@ -78,10 +97,13 @@ class Tracker():
 
     """regress the position of the tracks and also checks their scores"""
 
-    def regress_tracks(self, blob):
+    def regress_tracks(self, blob, img_metas, features):
         boxes_in = self.get_box()  # get the track's pos
         boxes_in = resize_boxes(boxes_in, blob['img_shape'][0][:2], blob['img'].shape[-2:])
-        poses, scores = self.obj_detect.predict_boxes((Tensor(boxes_in),))
+        proposal, proposal_mask = self.init_proposal((Tensor(boxes_in),))
+        pred_boxes, pred_cls, pred_mask = self.obj_detect(proposal, proposal_mask, img_metas, features)
+        pred_boxes, pred_cls, pred_mask = pred_boxes.asnumpy(), pred_cls.asnumpy(), pred_mask.asnumpy().astype(bool)
+        poses, scores = pred_boxes[pred_mask, :], pred_cls[pred_mask, 1]
         boxes = np.concatenate((poses, np.expand_dims(scores, axis=-1)), axis=1)
         boxes = clip_boxes(boxes, blob['img_shape'][0][:2])
 
@@ -252,11 +274,15 @@ class Tracker():
         ###########################
         # Look for new detections #
         ###########################
-        self.obj_detect.load_image(blob['img'], blob['img_shape'])
+        img_metas = Tensor(blob['img_shape'])
+        features = self.obj_detect_fea(Tensor(blob['img']))
         if self.public_detections:
-            dets = Tensor(blob['dets'])
+            dets = blob['dets']
             if len(dets) > 0:
-                poses, scores = self.obj_detect.predict_boxes((dets,))
+                proposal, proposal_mask = self.init_proposal((Tensor(dets),))
+                pred_boxes, pred_cls, pred_mask = self.obj_detect(proposal, proposal_mask, img_metas, features)
+                pred_boxes, pred_cls, pred_mask = pred_boxes.asnumpy(), pred_cls.asnumpy(), pred_mask.asnumpy().astype(bool)
+                poses, scores = pred_boxes[pred_mask, :], pred_cls[pred_mask, 1]
                 boxes = np.concatenate((poses, np.expand_dims(scores, axis=-1)), axis=1)
             else:
                 boxes = np.array([])
@@ -285,7 +311,7 @@ class Tracker():
                 self.align(blob)
 
             # regress
-            self.regress_tracks(blob)
+            self.regress_tracks(blob, img_metas, features)
 
             if len(self.tracks):
                 nms_inp_reg = self.get_box()
