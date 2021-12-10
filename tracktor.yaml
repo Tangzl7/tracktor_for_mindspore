@@ -3,8 +3,9 @@ name: Tracktor
 module_name: MOT17
 # output dir
 output_dir: './output/tracktor/MOT17/Tracktor'
-# frcnn or fpn
-device_target: GPU
+# device
+device_target: "GPU"
+device_id: 0
 
 # frcnn
 obj_detect_weight: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn-25_332.ckpt

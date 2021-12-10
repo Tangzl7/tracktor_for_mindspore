@@ -29,7 +29,7 @@ get_real_path(){
 }
 
 PATH1=$(get_real_path $1)
-PATH2=$(get_real_path $3)
+PATH2=$(get_real_path $2)
 echo $PATH1
 echo $PATH2
 

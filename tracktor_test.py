@@ -18,7 +18,7 @@ import mindspore.common.dtype as mstype
 from mindspore import Parameter, context
 from mindspore import load_checkpoint, load_param_into_net
 
-context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU", device_id=0)
+context.set_context(mode=context.PYNATIVE_MODE, device_target=tracktor_config.device_target, device_id=tracktor_config.device_id)
 
 
 def get_weights(obj_detect_models, dataset):

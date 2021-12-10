@@ -129,8 +129,8 @@ num_classes: 2
 
 # train.py FasterRcnn training
 run_distribute: False
-train_data: "./data/MOT17/train"
-pre_trained: "/cache/train/fasterrcnn/faster_rcnn-12_7393.ckpt"
+train_data: "/home/cqu/tzl/tracktor_for_mindspore/data/MOT17/train"
+pre_trained: "/home/cqu/tzl/tracktor_for_mindspore/output/faster_rcnn_fpn/pretraining/fasterrcnn_resnet50_fpn.ckpt"
 device_id: 0
 device_num: 1
 rank_id: 0
