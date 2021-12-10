@@ -1,128 +1,130 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# Copyright 2021 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+
+"""Parse arguments"""
 
 import os
-import os.path as osp
-import numpy as np
-# `pip install easydict` if you don't have it
-from easydict import EasyDict as edict
+import ast
+import argparse
+from pprint import pprint, pformat
+import yaml
 
-__C = edict()
-# Consumers can get config by:
-#   from fast_rcnn_config import cfg
-cfg = __C
+class Config:
+    """
+    Configuration namespace. Convert dictionary to members.
+    """
+    def __init__(self, cfg_dict):
+        for k, v in cfg_dict.items():
+            if isinstance(v, (list, tuple)):
+                setattr(self, k, [Config(x) if isinstance(x, dict) else x for x in v])
+            else:
+                setattr(self, k, Config(v) if isinstance(v, dict) else v)
 
-# Root directory of project
-__C.ROOT_DIR = osp.abspath(osp.join(osp.dirname(__file__), '..', '..'))
+    def __str__(self):
+        return pformat(self.__dict__)
 
-# Data directory
-__C.DATA_DIR = osp.abspath(osp.join(__C.ROOT_DIR, 'data'))
-
-__C.PIXEL_MEANS = np.array([[[102.9801, 115.9465, 122.7717]]])
-
-__C.TEST = edict()
-
-__C.TEST.SCALES = (768,)
-
-__C.TEST.MAX_SIZE = 1280
-
-def get_output_dir(module):
-  """Return the directory where experimental artifacts are placed.
-  If the directory does not exist, it is created.
-
-  A canonical path is built using the name from an imdb and a network
-  (if not None).
-  """
-  outdir = osp.abspath(osp.join(__C.ROOT_DIR, 'output', 'tracktor', module))
-  #if weights_filename is None:
-  #  weights_filename = 'default'
-  #outdir = osp.join(outdir, weights_filename)
-  if not os.path.exists(outdir):
-    os.makedirs(outdir)
-  return outdir
-
-def get_tb_dir(module):
-  """Return the directory where experimental artifacts are placed.
-  If the directory does not exist, it is created.
-
-  A canonical path is built using the name from an imdb and a network
-  (if not None).
-  """
-  outdir = osp.abspath(osp.join(__C.ROOT_DIR, 'tensorboard', 'tracker', module))
-  #if weights_filename is None:
-  #  weights_filename = 'default'
-  #outdir = osp.join(outdir, weights_filename)
-  if not os.path.exists(outdir):
-    os.makedirs(outdir)
-  return outdir
-
-def get_cache_dir():
-  outdir = osp.abspath(osp.join(__C.ROOT_DIR, 'output', 'cache'))
-  if not os.path.exists(outdir):
-    os.makedirs(outdir)
-  return outdir
-
-def _merge_a_into_b(a, b):
-  """Merge config dictionary a into config dictionary b, clobbering the
-  options in b whenever they are also specified in a.
-  """
-  if type(a) is not edict:
-    return
-
-  for k, v in a.items():
-    # a must specify keys that are in b
-    if k not in b:
-      raise KeyError('{} is not a valid config key'.format(k))
-
-    # the types must match, too
-    old_type = type(b[k])
-    if old_type is not type(v):
-      if isinstance(b[k], np.ndarray):
-        v = np.array(v, dtype=b[k].dtype)
-      else:
-        raise ValueError(('Type mismatch ({} vs. {}) '
-                          'for config key: {}').format(type(b[k]),
-                                                       type(v), k))
-
-    # recursively merge dicts
-    if type(v) is edict:
-      try:
-        _merge_a_into_b(a[k], b[k])
-      except:
-        print(('Error under config key: {}'.format(k)))
-        raise
-    else:
-      b[k] = v
+    def __repr__(self):
+        return self.__str__()
 
 
-def cfg_from_file(filename):
-  """Load a config file and merge it into the default options."""
-  import yaml
-  with open(filename, 'r') as f:
-    yaml_cfg = edict(yaml.load(f))
+def parse_cli_to_yaml(parser, cfg, helper=None, choices=None, cfg_path="default_frcnn_config.yaml"):
+    """
+    Parse command line arguments to the configuration according to the default yaml.
 
-  _merge_a_into_b(yaml_cfg, __C)
+    Args:
+        parser: Parent parser.
+        cfg: Base configuration.
+        helper: Helper description.
+        cfg_path: Path to the default yaml config.
+    """
+    parser = argparse.ArgumentParser(description="[REPLACE THIS at config.py]",
+                                     parents=[parser])
+    helper = {} if helper is None else helper
+    choices = {} if choices is None else choices
+    for item in cfg:
+        if not isinstance(cfg[item], list) and not isinstance(cfg[item], dict):
+            help_description = helper[item] if item in helper else "Please reference to {}".format(cfg_path)
+            choice = choices[item] if item in choices else None
+            if isinstance(cfg[item], bool):
+                parser.add_argument("--" + item, type=ast.literal_eval, default=cfg[item], choices=choice,
+                                    help=help_description)
+            else:
+                parser.add_argument("--" + item, type=type(cfg[item]), default=cfg[item], choices=choice,
+                                    help=help_description)
+    args = parser.parse_args()
+    return args
 
 
-def cfg_from_list(cfg_list):
-  """Set config keys via list (e.g., from command line)."""
-  from ast import literal_eval
-  assert len(cfg_list) % 2 == 0
-  for k, v in zip(cfg_list[0::2], cfg_list[1::2]):
-    key_list = k.split('.')
-    d = __C
-    for subkey in key_list[:-1]:
-      assert subkey in d
-      d = d[subkey]
-    subkey = key_list[-1]
-    assert subkey in d
-    try:
-      value = literal_eval(v)
-    except:
-      # handle the case when v is a string literal
-      value = v
-    assert type(value) == type(d[subkey]), \
-      'type {} does not match original type {}'.format(
-        type(value), type(d[subkey]))
-    d[subkey] = value
+def parse_yaml(yaml_path):
+    """
+    Parse the yaml config file.
+
+    Args:
+        yaml_path: Path to the yaml config.
+    """
+    with open(yaml_path, 'r') as fin:
+        try:
+            cfgs = yaml.load_all(fin.read(), Loader=yaml.FullLoader)
+            cfgs = [x for x in cfgs]
+            if len(cfgs) == 1:
+                cfg_helper = {}
+                cfg = cfgs[0]
+                cfg_choices = {}
+            elif len(cfgs) == 2:
+                cfg, cfg_helper = cfgs
+                cfg_choices = {}
+            elif len(cfgs) == 3:
+                cfg, cfg_helper, cfg_choices = cfgs
+            else:
+                raise ValueError("At most 3 docs (config, description for help, choices) are supported in config yaml")
+            print(cfg_helper)
+        except:
+            raise ValueError("Failed to parse yaml")
+    return cfg, cfg_helper, cfg_choices
+
+
+def merge(args, cfg):
+    """
+    Merge the base config from yaml file and command line arguments.
+
+    Args:
+        args: Command line arguments.
+        cfg: Base configuration.
+    """
+    args_var = vars(args)
+    for item in args_var:
+        cfg[item] = args_var[item]
+    return cfg
+
+
+def get_config():
+    """
+    Get Config according to the yaml file and cli arguments.
+    """
+    parser = argparse.ArgumentParser(description="default name", add_help=False)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parser.add_argument("--config_path", type=str, default=os.path.join(current_dir, "../../tracktor.yaml"),
+                        help="Config file path")
+    path_args, _ = parser.parse_known_args()
+    default, helper, choices = parse_yaml(path_args.config_path)
+    args = parse_cli_to_yaml(parser=parser, cfg=default, helper=helper, choices=choices, cfg_path=path_args.config_path)
+    default = Config(merge(args, default))
+    pprint(default)
+    print("Please check the above information for the configurations", flush=True)
+
+    return default
+
+
+config = get_config()

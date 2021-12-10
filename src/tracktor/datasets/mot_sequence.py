@@ -6,8 +6,6 @@ import configparser
 import os.path as osp
 from PIL import Image
 
-from ..config import cfg
-
 from mindspore import Tensor
 
 
@@ -23,7 +21,7 @@ class MOTSequence:
         self._height = height
         self._width = width
 
-        self._mot_dir = osp.join(cfg.DATA_DIR, mot_dir)
+        self._mot_dir = mot_dir
 
         self._train_folders = os.listdir(osp.join(self._mot_dir, 'train'))
         self._test_folders = os.listdir(osp.join(self._mot_dir, 'test'))

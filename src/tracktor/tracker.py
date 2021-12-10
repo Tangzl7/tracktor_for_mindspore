@@ -3,6 +3,7 @@ import numpy as np
 from collections import deque
 from scipy.optimize import linear_sum_assignment
 
+from src.tracktor.util_net import NMSWithMask, InitProposal
 from src.frcnn.model_utils.config import config
 from src.tracktor.utils import clip_boxes, resize_boxes, \
     warp_pos, euclidean_squared_distance
@@ -21,22 +22,22 @@ class Tracker():
         self.obj_detect = obj_detect  # object detector
         self.obj_detect_fea = obj_detect_fea
         self.reid_network = reid_network
-        self.detection_person_thresh = tracker_cfg['detection_person_thresh']
-        self.regression_person_thresh = tracker_cfg['regression_person_thresh']
-        self.detection_nms_thresh = tracker_cfg['detection_nms_thresh']
-        self.regression_nms_thresh = tracker_cfg['regression_nms_thresh']
-        self.public_detections = tracker_cfg['public_detections']
-        self.inactive_patience = tracker_cfg['inactive_patience']  # 10
-        self.do_reid = tracker_cfg['do_reid']
-        self.max_features_num = tracker_cfg['max_features_num']
-        self.reid_sim_threshold = tracker_cfg['reid_sim_threshold']
-        self.reid_iou_threshold = tracker_cfg['reid_iou_threshold']
-        self.do_align = tracker_cfg['do_align']
-        self.motion_model_cfg = tracker_cfg['motion_model']
+        self.detection_person_thresh = tracker_cfg.detection_person_thresh
+        self.regression_person_thresh = tracker_cfg.regression_person_thresh
+        self.detection_nms_thresh = tracker_cfg.detection_nms_thresh
+        self.regression_nms_thresh = tracker_cfg.regression_nms_thresh
+        self.public_detections = tracker_cfg.public_detections
+        self.inactive_patience = tracker_cfg.inactive_patience  # 10
+        self.do_reid = tracker_cfg.do_reid
+        self.max_features_num = tracker_cfg.max_features_num
+        self.reid_sim_threshold = tracker_cfg.reid_sim_threshold
+        self.reid_iou_threshold = tracker_cfg.reid_iou_threshold
+        self.do_align = tracker_cfg.do_align
+        self.motion_model_cfg = tracker_cfg.motion_model
 
-        self.warp_mode = eval(tracker_cfg['warp_mode'])
-        self.number_of_iterations = tracker_cfg['number_of_iterations']
-        self.termination_eps = tracker_cfg['termination_eps']
+        self.warp_mode = eval(tracker_cfg.warp_mode)
+        self.number_of_iterations = tracker_cfg.number_of_iterations
+        self.termination_eps = tracker_cfg.termination_eps
 
         self.tracks = []
         self.inactive_tracks = []
@@ -44,11 +45,9 @@ class Tracker():
         self.im_index = 0
         self.results = {}
 
-        self.ones = ops.Ones()
-        self.zeros = ops.Zeros()
-        self.concat = ops.Concat()
-        self.det_nms = ops.NMSWithMask(self.detection_nms_thresh)
-        self.reg_nms = ops.NMSWithMask(self.regression_nms_thresh)
+        self.det_nms = NMSWithMask(self.detection_nms_thresh)
+        self.reg_nms = NMSWithMask(self.regression_nms_thresh)
+        self.init_proposal_net = InitProposal()
 
     def reset(self, hard=True):
         self.tracks = []  # active target trajectory set
@@ -63,14 +62,15 @@ class Tracker():
     def init_proposal(self, boxes):
         # proposal: tuple: batch, 1000, 5
         # proposal_mask: tuple: batch, 1000, 5
-        proposal, proposal_mask = (), ()
-        for i in range(len(boxes)):
-            boxes_false = self.zeros((config.rpn_max_num - len(boxes[i]), 5), ms.float32)
-            proposal = proposal + (self.concat((boxes[i], boxes_false)),)
-            masks_true = self.ones((len(boxes[i])), mstype.bool_)
-            masks_false = self.zeros((config.rpn_max_num - len(boxes[i])), mstype.bool_)
-            proposal_mask = proposal_mask + (self.concat((masks_true, masks_false)),)
-        return proposal, proposal_mask
+        return self.init_proposal_net(boxes)
+        # proposal, proposal_mask = (), ()
+        # for i in range(len(boxes)):
+        #     boxes_false = self.zeros((config.rpn_max_num - len(boxes[i]), 5), ms.float32)
+        #     proposal = proposal + (self.concat((boxes[i], boxes_false)),)
+        #     masks_true = self.ones((len(boxes[i])), mstype.bool_)
+        #     masks_false = self.zeros((config.rpn_max_num - len(boxes[i])), mstype.bool_)
+        #     proposal_mask = proposal_mask + (self.concat((masks_true, masks_false)),)
+        # return proposal, proposal_mask
 
     """remove some tracks"""
 
@@ -91,7 +91,7 @@ class Tracker():
                 new_det_features[i].reshape((1, -1)),
                 self.inactive_patience,
                 self.max_features_num,
-                self.motion_model_cfg['n_steps'] if self.motion_model_cfg['n_steps'] > 0 else 1
+                self.motion_model_cfg.n_steps if self.motion_model_cfg.n_steps > 0 else 1
             ))
         self.track_num += num_new
 
