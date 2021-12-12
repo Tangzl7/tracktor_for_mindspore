@@ -6,7 +6,7 @@ checkpoint_url: ""
 data_path: "/cache/data"
 output_path: "/cache/train"
 load_path: "/cache/checkpoint_path"
-device_target: Ascend
+device_target: GPU
 
 # ==============================================================================
 # config
@@ -109,8 +109,8 @@ sgd_step: [8, 11]
 sgd_momentum: 0.9
 
 # train
-batch_size: 1
-loss_scale: 1024
+batch_size: 2
+loss_scale: 256
 momentum: 0.9
 weight_decay: 0.0005
 epoch_size: 30
@@ -121,16 +121,15 @@ save_checkpoint_epochs: 1
 keep_checkpoint_max: 10
 save_checkpoint_path: "./output"
 
-# Number of threads used to process the dataset in parallel
-num_parallel_workers: 8
+
 # Parallelize Python operations with multiple worker processes
 python_multiprocessing: True
 num_classes: 2
 
 # train.py FasterRcnn training
 run_distribute: False
-train_data: "/home/cqu/tzl/tracktor_for_mindspore/data/MOT17/train"
-pre_trained: "/home/cqu/tzl/tracktor_for_mindspore/output/faster_rcnn_fpn/pretraining/fasterrcnn_resnet50_fpn.ckpt"
+train_data: "./data/MOT17/train"
+pre_trained: "./output/faster_rcnn_fpn/pretraining/fasterrcnn_resnet50_fpn.ckpt"
 device_id: 0
 device_num: 1
 rank_id: 0
@@ -182,5 +181,3 @@ interval: "val interval"
 
 ---
 device_target: ['Ascend', 'GPU', 'CPU']
-file_format: ["AIR", "ONNX", "MINDIR"]
-dataset_name: ["cifar10", "imagenet2012"]

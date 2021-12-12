@@ -19,7 +19,7 @@ import os
 import functools
 from mindspore import context
 from mindspore.profiler import Profiler
-# from .config import config
+from .config import config
 
 _global_sync_count = 0
 
@@ -43,7 +43,7 @@ def get_job_id():
     job_id = job_id if job_id != "" else "default"
     return job_id
 
-"""
+
 def sync_data(from_path, to_path):
     import moxing as mox
     import time
@@ -69,8 +69,8 @@ def sync_data(from_path, to_path):
         time.sleep(1)
 
     print("Finish sync data from {} to {}.".format(from_path, to_path))
-"""
-"""
+
+
 def moxing_wrapper(pre_process=None, post_process=None):
     def wrapper(run_func):
         @functools.wraps(run_func)
@@ -96,13 +96,7 @@ def moxing_wrapper(pre_process=None, post_process=None):
                 if pre_process:
                     pre_process()
 
-            if config.enable_profiling:
-                profiler = Profiler()
-
             run_func(*args, **kwargs)
-
-            if config.enable_profiling:
-                profiler.analyse()
 
             # Upload data to train_url
             if config.enable_modelarts:
@@ -114,4 +108,3 @@ def moxing_wrapper(pre_process=None, post_process=None):
                     sync_data(config.output_path, config.train_url)
         return wrapped_func
     return wrapper
-"""

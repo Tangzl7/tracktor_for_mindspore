@@ -6,6 +6,7 @@ from src.frcnn.lr_schedule import dynamic_lr_1
 from src.frcnn.mot_data import preprocess_fn
 from src.frcnn.faster_rcnn_r50 import Faster_Rcnn_Resnet50
 from src.frcnn.mot_data import MOTObjDetectDatasetGenerator
+from src.frcnn.model_utils.moxing_adapter import moxing_wrapper
 from src.frcnn.network_define import LossCallBack, WithLossCell, TrainOneStepCell, LossNet
 
 from mindspore.nn import SGD
@@ -24,8 +25,8 @@ context.set_context(mode=context.GRAPH_MODE, device_target=config.device_target,
 
 if config.run_distribute:
     if config.device_target == "Ascend":
-        rank = config.rank_id
-        device_num = config.device_num
+        rank = get_rank()
+        device_num = get_group_size()
         context.set_auto_parallel_context(device_num=device_num, parallel_mode=ParallelMode.DATA_PARALLEL,
                                           gradients_mean=True)
         init()
@@ -45,7 +46,7 @@ def get_dataset():
     train_split_seqs = ['MOT17-02-FRCNN', 'MOT17-04-FRCNN', 'MOT17-05-FRCNN', 'MOT17-09-FRCNN', 'MOT17-10-FRCNN', 'MOT17-11-FRCNN', 'MOT17-13-FRCNN']
     dataset_generator = MOTObjDetectDatasetGenerator(root=train_data_dir, split_seqs=train_split_seqs)
     dataset = ds.GeneratorDataset(dataset_generator, ['img', 'img_shape', 'boxes', 'labels', 'valid_num', 'image_id'],
-                                  shuffle=True, python_multiprocessing=config.python_multiprocessing, num_shards=config.device_num, shard_id=config.rank_id)
+                                  shuffle=True, python_multiprocessing=config.python_multiprocessing, num_shards=device_num, shard_id=rank)
     preprocess_func = (lambda img, img_shape, boxes, labels, valid_num, image_id:
                         preprocess_fn(img, img_shape, boxes, labels, valid_num, image_id, 0.5))
     dataset = dataset.map(input_columns=['img', 'img_shape', 'boxes', 'labels', 'valid_num', 'image_id'],
@@ -67,7 +68,10 @@ def get_detection_model():
 
     return model
 
+def modelarts_pre_process():
+    config.save_checkpoint_path = config.output_path
 
+@moxing_wrapper(pre_process=modelarts_pre_process)
 def train(model, dataset):
     print("train start...")
     loss = LossNet()
@@ -98,7 +102,7 @@ def train(model, dataset):
     if config.save_checkpoint:
         ckptconfig = CheckpointConfig(save_checkpoint_steps=config.save_checkpoint_epochs * dataset.get_dataset_size(),
                                       keep_checkpoint_max=config.keep_checkpoint_max)
-        save_checkpoint_path = osp.join(config.save_checkpoint_path, "ckpt_" + str(config.rank_id) + "/")
+        save_checkpoint_path = osp.join(config.save_checkpoint_path, "ckpt_" + str(rank) + "/")
         ckpoint_cb = ModelCheckpoint(prefix='faster_rcnn', directory=save_checkpoint_path, config=ckptconfig)
         cb += [ckpoint_cb]
 
