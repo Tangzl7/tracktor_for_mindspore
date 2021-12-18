@@ -119,8 +119,9 @@ def get_config():
                         help="Config file path")
     path_args, _ = parser.parse_known_args()
     default, helper, choices = parse_yaml(path_args.config_path)
-    args = parse_cli_to_yaml(parser=parser, cfg=default, helper=helper, choices=choices, cfg_path=path_args.config_path)
-    default = Config(merge(args, default))
+    # args = parse_cli_to_yaml(parser=parser, cfg=default, helper=helper, choices=choices, cfg_path=path_args.config_path)
+    # default = Config(merge(args, default))
+    default = Config(default)
     pprint(default)
     print("Please check the above information for the configurations", flush=True)
 

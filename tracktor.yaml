@@ -8,7 +8,7 @@ device_target: "GPU"
 device_id: 0
 
 # frcnn
-obj_detect_weight: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn-25_332.ckpt
+obj_detect_weight: output/faster_rcnn_fpn/faster_rcnn_fpn_training_mot_17/faster_rcnn_58_4.ckpt
 
 # reid
 reid_weight: output/tracktor/MOT17/reid/reid.ckpt
@@ -19,7 +19,7 @@ write_images: False
 # load tracking results if available and only evaluate
 load_results: False
 # dataset (look into tracker/datasets/factory.py)
-dataset: mot17_02_FRCNN
+dataset: mot17_train_FRCNN
 # [start percentage, end percentage], e.g., [0.0, 0.5] for train and [0.75, 1.0] for val split.
 frame_range:
   start: 0.0

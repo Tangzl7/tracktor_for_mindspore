@@ -106,6 +106,7 @@ class Faster_Rcnn_Resnet50(nn.Cell):
                                            config.activate_num_classes,
                                            config.use_sigmoid_cls)
         self.proposal_generator.set_train_local(config, True)
+        self.proposal_generator.set_train_local(config, True)
         self.proposal_generator_test = Proposal(config,
                                                 config.test_batch_size,
                                                 config.activate_num_classes,

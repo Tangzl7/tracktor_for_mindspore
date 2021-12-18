@@ -1,26 +1,21 @@
 import os
 import time
-import tqdm
-import yaml
 import numpy as np
-import os.path as osp
 
 from src.tracktor.tracker import Tracker
 from src.tracktor.reid import ResNet50_FC512
 from src.tracktor.datasets.factory import Datasets
-from src.tracktor.utils import get_mot_accum, \
-                    plot_sequence, evaluate_mot_accums
-from src.tracktor.frcnn_fpn import FRCNN_FPN, FRCNN_FPN_Fea
 from src.tracktor.config import config as tracktor_config
-from src.frcnn.model_utils.config import config as frcnn_config
+from src.tracktor.frcnn_fpn import FRCNN_FPN, FRCNN_FPN_Fea
+from src.tracktor.utils import get_mot_accum, evaluate_mot_accums
 
 import mindspore.common.dtype as mstype
 from mindspore import Parameter, context
 from mindspore import load_checkpoint, load_param_into_net
 
-context.set_context(mode=context.PYNATIVE_MODE, device_target=tracktor_config.device_target, device_id=tracktor_config.device_id)
 
-if __name__ == '__main__':
+def apply_eval(frcnn_config, frcnn_ckpt):
+    context.set_context(mode=context.PYNATIVE_MODE)
     output_dir = tracktor_config.output_dir
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -35,7 +30,7 @@ if __name__ == '__main__':
     print("Initializing object detector(s).")
     obj_detect = FRCNN_FPN(frcnn_config)
     obj_detect_fea = FRCNN_FPN_Fea(frcnn_config)
-    param_dict = load_checkpoint(tracktor_config.obj_detect_weight)
+    param_dict = load_checkpoint(frcnn_ckpt)
     if tracktor_config.device_target == "GPU":
         for key, value in param_dict.items():
             tensor = value.asnumpy().astype(np.float32)
@@ -65,7 +60,6 @@ if __name__ == '__main__':
     time_total, num_frames, mot_accums = 0, 0, []
 
     for seq in dataset:
-        tracker.obj_detect = obj_detect
         tracker.reset()
 
         print(f"Tracking: {seq}")
@@ -95,15 +89,12 @@ if __name__ == '__main__':
         else:
             mot_accums.append(get_mot_accum(results, seq))
 
-        if tracktor_config.write_images:
-            plot_sequence(results, seq, osp.join(output_dir,
-                                str(dataset), str(seq)), tracktor_config.write_images)
     if time_total:
         print(f"Tracking runtime for all sequences (without evaluation or image writing): "
-                f"{time_total:.2f} s for {num_frames} frames ({num_frames / time_total:.2f} Hz)")
+              f"{time_total:.2f} s for {num_frames} frames ({num_frames / time_total:.2f} Hz)")
     if mot_accums:
         print("Evaluation:")
         evaluate_mot_accums(mot_accums,
                             [str(s) for s in dataset if not s.no_gt],
                             generate_overall=True)
-
+    context.set_context(mode=context.GRAPH_MODE)
